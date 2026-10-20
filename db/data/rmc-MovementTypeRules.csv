@@ -1,0 +1,6 @@
+movementType;description;eligible;quantitySign;requiresReference
+101;Goods receipt;true;1;false
+102;Goods receipt reversal;true;-1;true
+122;Return to vendor;true;-1;true
+103;Goods receipt to blocked stock;false;1;false
+105;Release from blocked stock;false;1;true

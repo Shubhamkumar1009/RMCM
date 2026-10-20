@@ -1,0 +1,17 @@
+{
+  "build": {
+    "target": "gen",
+    "tasks": [
+      {
+        "for": "nodejs",
+        "src": "srv"
+      }
+    ]
+  },
+  "log": {
+    "levels": {
+      "rmc-worker": "info",
+      "rmc-service": "info"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+settingKey;category;value;dataType;description;adminEditable;restartRequired
+CALCULATION_CHUNK_SIZE;PERFORMANCE;500;INTEGER;Number of calculation lines inserted per database batch;true;false
+CALCULATION_ROUNDING_SCALE;FINANCE;2;INTEGER;Currency decimals applied to each calculation line;true;false
+WORKER_MAX_CONCURRENT_RUNS;PERFORMANCE;1;INTEGER;Maximum worker concurrency per instance;true;true
+ALLOW_SELF_APPROVAL_DEMO;WORKFLOW;true;BOOLEAN;Allows one demo identity to submit and approve;true;false
+DEFAULT_CALCULATION_PRIORITY;PERFORMANCE;100;INTEGER;Default queue priority where lower values run first;true;false
+RETROACTIVE_MAX_DAYS;FINANCE;120;INTEGER;Maximum permitted retrospective age before exceptional approval;true;false

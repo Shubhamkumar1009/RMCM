@@ -1,0 +1,21 @@
+{
+  "xsappname": "rmc-management",
+  "tenant-mode": "dedicated",
+  "description": "Raw Material Content Management",
+  "scopes": [
+    { "name": "$XSAPPNAME.RmcViewer", "description": "View RMC data" },
+    { "name": "$XSAPPNAME.RmcEditor", "description": "Maintain RMC data" },
+    { "name": "$XSAPPNAME.RmcApprover", "description": "Approve RMC changes" },
+    { "name": "$XSAPPNAME.RmcFinance", "description": "Approve and post financial results" },
+    { "name": "$XSAPPNAME.RmcAdmin", "description": "Configure the RMC application" },
+    { "name": "$XSAPPNAME.RmcAuditor", "description": "Read audit and reconciliation data" }
+  ],
+  "role-templates": [
+    { "name": "RmcViewer", "description": "RMC viewer", "scope-references": ["$XSAPPNAME.RmcViewer"] },
+    { "name": "RmcEditor", "description": "RMC editor", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcEditor"] },
+    { "name": "RmcApprover", "description": "RMC approver", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcApprover"] },
+    { "name": "RmcFinance", "description": "RMC finance", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcFinance"] },
+    { "name": "RmcAdmin", "description": "RMC administrator", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcAdmin"] },
+    { "name": "RmcAuditor", "description": "RMC auditor", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcAuditor"] }
+  ]
+}

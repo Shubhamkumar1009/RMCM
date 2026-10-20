@@ -1,0 +1,18 @@
+---
+applications:
+  - name: rmc-management-demo
+    path: .
+    command: npm run start:demo
+    memory: 512M
+    disk_quota: 1G
+    instances: 1
+    random-route: true
+    buildpacks:
+      - nodejs_buildpack
+    env:
+      NODE_ENV: production
+      RMC_DEMO_MODE: "true"
+      RMC_WORKER_ENABLED: "true"
+      RMC_WORKER_POLL_MS: "3000"
+    health-check-type: http
+    health-check-http-endpoint: /health

@@ -1,0 +1,65 @@
+{
+  "name": "rmc-management",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Raw Material Content Management on SAP CAP",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "start:demo": "cds-serve --profile demo",
+    "watch": "cds watch --profile development",
+    "build": "cds build --production",
+    "test": "node --test test/**/*.test.js",
+    "reset:demo": "node scripts/reset-demo.js",
+    "deploy:trial": "cf push -f manifest.yml"
+  },
+  "dependencies": {
+    "@cap-js/sqlite": "^3",
+    "@sap/cds": "^10",
+    "decimal.js": "^10"
+  },
+  "devDependencies": {
+    "@sap/cds-dk": "^10"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "[development]": {
+          "kind": "sqlite",
+          "credentials": {
+            "url": "db.sqlite"
+          }
+        },
+        "[demo]": {
+          "kind": "sqlite",
+          "credentials": {
+            "url": ":memory:"
+          }
+        },
+        "[test]": {
+          "kind": "sqlite",
+          "credentials": {
+            "url": ":memory:"
+          }
+        }
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked"
+        },
+        "[demo]": {
+          "kind": "dummy"
+        },
+        "[production]": {
+          "kind": "xsuaa"
+        }
+      }
+    },
+    "odata": {
+      "version": "v4"
+    }
+  }
+}

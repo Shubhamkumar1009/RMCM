@@ -1,0 +1,183 @@
+<mvc:View
+  controllerName="rmc.app.controller.App"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  xmlns:f="sap.f">
+  <App busy="{app>/busy}">
+    <Page showHeader="true" class="rmcPage">
+      <customHeader>
+        <OverflowToolbar class="rmcHeader">
+          <Title text="Raw Material Content Management" level="H2" />
+          <ToolbarSpacer />
+          <ObjectStatus text="DEMO — NOT CONNECTED TO S/4HANA" state="Warning" icon="sap-icon://message-warning" />
+          <Button icon="sap-icon://refresh" tooltip="Refresh all" press=".onRefresh" />
+        </OverflowToolbar>
+      </customHeader>
+      <content>
+        <IconTabBar id="mainTabs" expandable="false" class="sapUiResponsiveContentPadding">
+          <items>
+            <IconTabFilter key="overview" text="Overview" icon="sap-icon://business-objects-experience">
+              <VBox class="sapUiMediumMarginTop">
+                <Title text="Month-end control tower" level="H3" />
+                <Text text="Monitor commodity price changes, queued calculations, approvals and simulated postings." class="sapUiTinyMarginBottom" />
+                <FlexBox wrap="Wrap" class="rmcTiles">
+                  <GenericTile header="Draft price changes" subheader="Awaiting submission" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                    <TileContent><NumericContent value="{app>/dashboard/draftPriceChanges}" icon="sap-icon://edit" valueColor="Neutral" /></TileContent>
+                  </GenericTile>
+                  <GenericTile header="Pending approvals" subheader="Commercial review" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                    <TileContent><NumericContent value="{app>/dashboard/pendingApprovals}" icon="sap-icon://approvals" valueColor="Critical" /></TileContent>
+                  </GenericTile>
+                  <GenericTile header="Queued / running" subheader="Asynchronous jobs" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                    <TileContent><NumericContent value="{= ${app>/dashboard/queuedRuns} + ${app>/dashboard/runningRuns} }" icon="sap-icon://process" valueColor="Neutral" /></TileContent>
+                  </GenericTile>
+                  <GenericTile header="Approved, not posted" subheader="Requires posting simulation" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                    <TileContent><NumericContent value="{app>/dashboard/approvedNotPosted}" icon="sap-icon://pending" valueColor="Critical" /></TileContent>
+                  </GenericTile>
+                  <GenericTile header="Open exposure" subheader="{app>/dashboard/currency}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
+                    <TileContent><NumericContent value="{app>/dashboard/totalExposure}" truncateValueTo="12" icon="sap-icon://money-bills" valueColor="Good" /></TileContent>
+                  </GenericTile>
+                </FlexBox>
+                <MessageStrip text="This trial deployment uses synthetic contracts, BOMs, goods receipts and prices. All SAP document numbers are simulated." type="Information" showIcon="true" class="sapUiMediumMarginTop" />
+              </VBox>
+            </IconTabFilter>
+
+            <IconTabFilter key="prices" text="Commodity Prices" icon="sap-icon://line-chart">
+              <Table id="priceTable" items="{app>/priceChanges}" mode="SingleSelectLeft" sticky="HeaderToolbar,ColumnHeaders" growing="true" growingThreshold="50">
+                <headerToolbar>
+                  <OverflowToolbar>
+                    <Title text="Vendor price changes" level="H3" />
+                    <ToolbarSpacer />
+                    <Button text="Submit" icon="sap-icon://paper-plane" type="Emphasized" press=".onSubmitPrice" />
+                    <Button text="Approve" icon="sap-icon://accept" press=".onApprovePrice" />
+                    <Button text="Reject" icon="sap-icon://decline" press=".onRejectPrice" />
+                    <Button text="Queue calculation" icon="sap-icon://play" press=".onQueueCalculation" />
+                  </OverflowToolbar>
+                </headerToolbar>
+                <columns>
+                  <Column><Text text="Request" /></Column>
+                  <Column><Text text="Supplier" /></Column>
+                  <Column><Text text="RM grade" /></Column>
+                  <Column hAlign="End"><Text text="Old price" /></Column>
+                  <Column hAlign="End"><Text text="Proposed" /></Column>
+                  <Column><Text text="Effective" /></Column>
+                  <Column><Text text="Status" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <cells>
+                      <ObjectIdentifier title="{app>requestNumber}" text="{app>reason}" />
+                      <ObjectIdentifier title="{app>supplier/name}" text="{app>supplier/code}" />
+                      <ObjectIdentifier title="{app>grade/code}" text="{app>grade/name}" />
+                      <ObjectNumber number="{app>oldPrice}" unit="{app>currency}/{app>priceUoM}" />
+                      <ObjectNumber number="{app>proposedPrice}" unit="{app>currency}/{app>priceUoM}" emphasized="true" />
+                      <Text text="{app>validFrom}" />
+                      <ObjectStatus text="{app>status}" state="{= ${app>status} === 'APPROVED' ? 'Success' : (${app>status} === 'REJECTED' ? 'Error' : 'Warning') }" />
+                    </cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </IconTabFilter>
+
+            <IconTabFilter key="content" text="Part RM Content" icon="sap-icon://product">
+              <Table items="{app>/constituents}" growing="true" growingThreshold="100" sticky="ColumnHeaders">
+                <headerToolbar><Toolbar><Title text="Approved part composition" level="H3" /></Toolbar></headerToolbar>
+                <columns>
+                  <Column><Text text="Part" /></Column>
+                  <Column><Text text="Supplier" /></Column>
+                  <Column><Text text="RM type / grade" /></Column>
+                  <Column hAlign="End"><Text text="Content" /></Column>
+                  <Column hAlign="End"><Text text="Content %" /></Column>
+                  <Column><Text text="Source" /></Column>
+                  <Column><Text text="Profile status" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <cells>
+                      <ObjectIdentifier title="{app>profile/material/code}" text="{app>profile/material/description}" />
+                      <ObjectIdentifier title="{app>profile/supplier/name}" text="{app>profile/supplier/code}" />
+                      <ObjectIdentifier title="{app>grade/rawMaterialType/name}" text="{app>grade/code}" />
+                      <ObjectNumber number="{app>contentQuantity}" unit="{app>contentUoM}" />
+                      <ObjectNumber number="{app>contentPct}" unit="%" />
+                      <Text text="{app>source}" />
+                      <ObjectStatus text="{app>profile/status}" state="Success" />
+                    </cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+            </IconTabFilter>
+
+            <IconTabFilter key="calculations" text="Impact &amp; Posting" icon="sap-icon://simulate">
+              <Table id="runTable" items="{app>/calculations}" mode="SingleSelectLeft" growing="true" growingThreshold="50" sticky="HeaderToolbar,ColumnHeaders">
+                <headerToolbar>
+                  <OverflowToolbar>
+                    <Title text="Retrospective calculation runs" level="H3" />
+                    <ToolbarSpacer />
+                    <Button text="Approve result" icon="sap-icon://approvals" type="Emphasized" press=".onApproveRun" />
+                    <Button text="Simulate posting" icon="sap-icon://simulate" press=".onSimulatePosting" />
+                    <Button text="Create contract proposal" icon="sap-icon://document-text" press=".onCreateProposal" />
+                  </OverflowToolbar>
+                </headerToolbar>
+                <columns>
+                  <Column><Text text="Run" /></Column>
+                  <Column><Text text="Period" /></Column>
+                  <Column><Text text="Progress" /></Column>
+                  <Column hAlign="End"><Text text="Eligible qty" /></Column>
+                  <Column hAlign="End"><Text text="Impact" /></Column>
+                  <Column><Text text="Exceptions" /></Column>
+                  <Column><Text text="Status" /></Column>
+                </columns>
+                <items>
+                  <ColumnListItem>
+                    <cells>
+                      <ObjectIdentifier title="{app>runNumber}" text="{app>priceChange/requestNumber}" />
+                      <Text text="{app>periodFrom} — {app>periodTo}" />
+                      <ProgressIndicator percentValue="{= ${app>eligibleGrCount} ? (${app>processedGrCount} / ${app>eligibleGrCount}) * 100 : 0 }" displayValue="{app>processedGrCount} / {app>eligibleGrCount}" width="8rem" />
+                      <ObjectNumber number="{app>totalEligibleQty}" />
+                      <ObjectNumber number="{app>totalAmount}" unit="{app>currency}" emphasized="true" />
+                      <ObjectStatus text="{app>exceptionCount}" state="{= ${app>exceptionCount} > 0 ? 'Error' : 'Success' }" />
+                      <ObjectStatus text="{app>status}" state="{= ${app>status} === 'FAILED' ? 'Error' : (${app>status} === 'APPROVED' || ${app>status} === 'POSTED' ? 'Success' : 'Information') }" />
+                    </cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+              <Table items="{app>/postings}" class="sapUiMediumMarginTop">
+                <headerToolbar><Toolbar><Title text="Posting simulations" level="H4" /></Toolbar></headerToolbar>
+                <columns><Column><Text text="Document" /></Column><Column><Text text="Type" /></Column><Column><Text text="Status" /></Column><Column><Text text="Message" /></Column></columns>
+                <items><ColumnListItem><cells><Text text="{app>sapDocument}" /><Text text="{app>postingType}" /><ObjectStatus text="{app>status}" state="Information" /><Text text="{app>message}" /></cells></ColumnListItem></items>
+              </Table>
+            </IconTabFilter>
+
+            <IconTabFilter key="admin" text="Administration" icon="sap-icon://action-settings">
+              <MessageStrip text="Configuration changes affect new calculation snapshots only. Existing completed runs remain reproducible." type="Warning" showIcon="true" class="sapUiSmallMarginBottom" />
+              <Table id="settingsTable" items="{app>/settings}" mode="SingleSelectLeft">
+                <headerToolbar><OverflowToolbar><Title text="Application settings" level="H3" /><ToolbarSpacer /><Button text="Save selected" icon="sap-icon://save" type="Emphasized" press=".onSaveSetting" /></OverflowToolbar></headerToolbar>
+                <columns><Column><Text text="Category" /></Column><Column><Text text="Key" /></Column><Column><Text text="Value" /></Column><Column><Text text="Type" /></Column><Column><Text text="Description" /></Column></columns>
+                <items>
+                  <ColumnListItem>
+                    <cells><Text text="{app>category}" /><Text text="{app>settingKey}" /><Input value="{app>value}" editable="{app>adminEditable}" /><Text text="{app>dataType}" /><Text text="{app>description}" /></cells>
+                  </ColumnListItem>
+                </items>
+              </Table>
+              <Table id="movementTable" items="{app>/movementRules}" mode="SingleSelectLeft" class="sapUiMediumMarginTop">
+                <headerToolbar><OverflowToolbar><Title text="GR movement-type policy" level="H3" /><ToolbarSpacer /><Button text="Save selected" icon="sap-icon://save" press=".onSaveMovementRule" /></OverflowToolbar></headerToolbar>
+                <columns><Column><Text text="Movement" /></Column><Column><Text text="Description" /></Column><Column><Text text="Eligible" /></Column><Column><Text text="Quantity sign" /></Column><Column><Text text="Reference required" /></Column></columns>
+                <items><ColumnListItem><cells><Text text="{app>movementType}" /><Text text="{app>description}" /><Switch state="{app>eligible}" /><Select selectedKey="{app>quantitySign}"><core:Item key="1" text="+1" /><core:Item key="-1" text="-1" /></Select><Switch state="{app>requiresReference}" /></cells></ColumnListItem></items>
+              </Table>
+              <Table id="priceRuleTable" items="{app>/ruleTemplates}" mode="SingleSelectLeft" class="sapUiMediumMarginTop">
+                <headerToolbar><OverflowToolbar><Title text="Commodity price rule templates" level="H3" /><ToolbarSpacer /><Button text="Save selected" icon="sap-icon://save" press=".onSavePriceRule" /></OverflowToolbar></headerToolbar>
+                <columns><Column><Text text="Code" /></Column><Column><Text text="Method" /></Column><Column><Text text="Observation days" /></Column><Column><Text text="Lag days" /></Column><Column><Text text="Premium" /></Column><Column><Text text="No-change %" /></Column><Column><Text text="Rounding" /></Column><Column><Text text="Active" /></Column></columns>
+                <items><ColumnListItem><cells><Text text="{app>code}" /><Text text="{app>method}" /><Input value="{app>observationDays}" type="Number" /><Input value="{app>lagDays}" type="Number" /><Input value="{app>premium}" type="Number" /><Input value="{app>noChangeThresholdPct}" type="Number" /><Input value="{app>roundingScale}" type="Number" /><Switch state="{app>active}" /></cells></ColumnListItem></items>
+              </Table>
+              <Table id="approvalPolicyTable" items="{app>/approvalPolicies}" mode="SingleSelectLeft" class="sapUiMediumMarginTop sapUiMediumMarginBottom">
+                <headerToolbar><OverflowToolbar><Title text="Approval policies" level="H3" /><ToolbarSpacer /><Button text="Save selected" icon="sap-icon://save" press=".onSaveApprovalPolicy" /></OverflowToolbar></headerToolbar>
+                <columns><Column><Text text="Code" /></Column><Column><Text text="Object" /></Column><Column><Text text="Min amount" /></Column><Column><Text text="Max amount" /></Column><Column><Text text="Currency" /></Column><Column><Text text="Required role" /></Column><Column><Text text="Sequence" /></Column><Column><Text text="Active" /></Column></columns>
+                <items><ColumnListItem><cells><Text text="{app>code}" /><Text text="{app>objectType}" /><Input value="{app>minimumAmount}" type="Number" /><Input value="{app>maximumAmount}" type="Number" /><Text text="{app>currency}" /><Input value="{app>requiredRole}" /><Input value="{app>sequence}" type="Number" /><Switch state="{app>active}" /></cells></ColumnListItem></items>
+              </Table>
+            </IconTabFilter>
+          </items>
+        </IconTabBar>
+      </content>
+    </Page>
+  </App>
+</mvc:View>

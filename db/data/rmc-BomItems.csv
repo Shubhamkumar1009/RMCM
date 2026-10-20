@@ -1,0 +1,3 @@
+ID;header_ID;itemNumber;component_ID;componentDescription;itemCategory;componentQuantity;componentUoM;componentScrapPct;fixedQuantity;phantom;relevantToRmc;version
+51000000-0000-4000-8000-000000000001;50000000-0000-4000-8000-000000000001;0010;20000000-0000-4000-8000-000000000002;Steel body;L;1.500000000;KG;2.000000;false;false;true;1
+51000000-0000-4000-8000-000000000002;50000000-0000-4000-8000-000000000001;0020;20000000-0000-4000-8000-000000000003;Aluminium insert;L;0.500000000;KG;1.000000;false;false;true;1

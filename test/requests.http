@@ -1,0 +1,19 @@
+@base = http://localhost:4004
+
+### Health
+GET {{base}}/health
+
+### Dashboard
+POST {{base}}/odata/v4/rmc/getDashboard
+Content-Type: application/json
+
+{}
+
+### Price changes
+GET {{base}}/odata/v4/rmc/PriceChangeRequests?$expand=supplier,grade
+
+### Calculation runs
+GET {{base}}/odata/v4/rmc/CalculationRuns?$expand=priceChange
+
+### Admin settings
+GET {{base}}/odata/v4/admin/AppSettings

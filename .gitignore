@@ -1,0 +1,12 @@
+node_modules/
+gen/
+artefacts/
+db.sqlite*
+.cds-services.json
+.env
+default-env.json
+*.log
+.idea/
+.vscode/settings.json
+coverage/
+dist/

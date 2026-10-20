@@ -1,0 +1,29 @@
+_schema-version: "3.3"
+ID: rmc-management
+version: 0.1.0
+description: Trial deployment for Raw Material Content Management
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  - name: rmc-management-demo
+    type: nodejs
+    path: .
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 512M
+      disk-quota: 1G
+      instances: 1
+      command: npm run start:demo
+    properties:
+      NODE_ENV: production
+      RMC_DEMO_MODE: "true"
+      RMC_WORKER_ENABLED: "true"
+      RMC_WORKER_POLL_MS: "3000"
+    build-parameters:
+      builder: npm
+      ignore:
+        - node_modules/
+        - db.sqlite*
+        - gen/

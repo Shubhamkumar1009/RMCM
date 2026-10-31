@@ -1,0 +1,2 @@
+ID;supplier_ID;material_ID;plant;purchasingOrg;contractItem_ID;revisionLevel;validFrom;validTo;status;contractStatus;missingContractReason;exceptionApprovalStatus;exceptionApprovedBy;exceptionApprovedAt;contractAllocatedBy;contractAllocatedAt;createdByPersona;version
+63000000-0000-4000-8000-000000000001;11111111-1111-4111-8111-111111111111;20000000-0000-4000-8000-000000000001;1000;P100;31000000-0000-4000-8000-000000000001;A01;2026-01-01;2026-12-31;APPROVED;ALLOCATED;;NOT_REQUIRED;;;demo.buyer;2026-01-04T09:00:00Z;BUYER;1

@@ -8,7 +8,11 @@
     { "name": "$XSAPPNAME.RmcApprover", "description": "Approve RMC changes" },
     { "name": "$XSAPPNAME.RmcFinance", "description": "Approve and post financial results" },
     { "name": "$XSAPPNAME.RmcAdmin", "description": "Configure the RMC application" },
-    { "name": "$XSAPPNAME.RmcAuditor", "description": "Read audit and reconciliation data" }
+    { "name": "$XSAPPNAME.RmcAuditor", "description": "Read audit and reconciliation data" },
+    { "name": "$XSAPPNAME.RmAdmin", "description": "Maintain and approve RM type, grade and subgrade masters" },
+    { "name": "$XSAPPNAME.CommodityAdmin", "description": "Maintain acceptable commodities" },
+    { "name": "$XSAPPNAME.Buyer", "description": "Request masters and maintain linkages, compositions and pricing" },
+    { "name": "$XSAPPNAME.CompositionApprover", "description": "Approve composition, contract exceptions and price documents" }
   ],
   "role-templates": [
     { "name": "RmcViewer", "description": "RMC viewer", "scope-references": ["$XSAPPNAME.RmcViewer"] },
@@ -16,6 +20,10 @@
     { "name": "RmcApprover", "description": "RMC approver", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcApprover"] },
     { "name": "RmcFinance", "description": "RMC finance", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcFinance"] },
     { "name": "RmcAdmin", "description": "RMC administrator", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcAdmin"] },
-    { "name": "RmcAuditor", "description": "RMC auditor", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcAuditor"] }
+    { "name": "RmcAuditor", "description": "RMC auditor", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmcAuditor"] },
+    { "name": "RmAdmin", "description": "RM master administrator", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.RmAdmin"] },
+    { "name": "CommodityAdmin", "description": "Commodity administrator", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.CommodityAdmin"] },
+    { "name": "Buyer", "description": "Buyer", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.Buyer"] },
+    { "name": "CompositionApprover", "description": "Composition and price-document approver", "scope-references": ["$XSAPPNAME.RmcViewer", "$XSAPPNAME.CompositionApprover"] }
   ]
 }

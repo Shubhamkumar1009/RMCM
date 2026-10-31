@@ -4,6 +4,9 @@ const cds = require('@sap/cds');
 const { decimal } = require('./lib/calculation-engine');
 const { toConfig } = require('./lib/configuration');
 const { DemoPostingAdapter, stableHash } = require('./lib/demo-posting-adapter');
+const { buildPricingWorkbench } = require('./lib/pricing-workbench');
+const { normalizeCommodityDraft, assertValidity, lifecycleStatus } = require('./lib/commodity-master');
+const { explodeBom, assessComposition, isInOrganizationalScope } = require('./lib/workflow-domain');
 
 const LOG = cds.log('rmc-service');
 
@@ -26,6 +29,41 @@ module.exports = class RmcService extends cds.ApplicationService {
     const entities = cds.entities('rmc');
     const postingAdapter = new DemoPostingAdapter();
 
+    this.before('CREATE', 'RawMaterialMasterRequests', (req) => {
+      const data = req.data;
+      data.ID ||= cds.utils.uuid();
+      data.requestNumber ||= `RMR-${new Date().getUTCFullYear()}-${data.ID.slice(0, 8).toUpperCase()}`;
+      data.requestType = String(data.requestType || '').toUpperCase();
+      if (!['TYPE', 'GRADE', 'SUBGRADE'].includes(data.requestType)) {
+        req.reject(400, 'Request type must be TYPE, GRADE or SUBGRADE.');
+      }
+      if (!data.proposedCode || !data.proposedName || !data.validFrom || !data.reason) {
+        req.reject(400, 'Code, name, valid-from date and reason are required.');
+      }
+      if (data.validTo && data.validTo < data.validFrom) req.reject(400, 'Valid-to date cannot precede valid-from date.');
+      data.status = 'DRAFT';
+      data.requestedBy = actor(req);
+      data.version = 1;
+    });
+
+    this.before('UPDATE', 'RawMaterialMasterRequests', async (req) => {
+      const ID = req.data.ID || req.params?.[0]?.ID;
+      const current = ID && await cds.tx(req).run(
+        SELECT.one.from(entities.RawMaterialMasterRequests).where({ ID })
+      );
+      if (!current) req.reject(404, 'RM master request not found.');
+      if (!['DRAFT', 'REJECTED'].includes(current.status)) req.reject(409, `A ${current.status} request cannot be edited.`);
+      const controlled = ['status', 'submittedAt', 'decidedBy', 'decidedAt', 'decisionComment', 'createdObjectID'];
+      if (controlled.some((field) => Object.prototype.hasOwnProperty.call(req.data, field))) {
+        req.reject(400, 'Workflow-controlled fields can be changed only through request actions.');
+      }
+      req.data.version = Number(current.version) + 1;
+    });
+
+    this.before('DELETE', 'RawMaterialMasterRequests', (req) => {
+      req.reject(405, 'RM master requests are retained for audit and cannot be deleted.');
+    });
+
     this.before('CREATE', 'PriceChangeRequests', (req) => {
       const data = req.data;
       data.ID ||= cds.utils.uuid();
@@ -45,7 +83,9 @@ module.exports = class RmcService extends cds.ApplicationService {
 
     this.before('UPDATE', 'PriceChangeRequests', async (req) => {
       const protectedFields = [
-        'status', 'version', 'submittedAt', 'submittedBy', 'decidedAt', 'decidedBy', 'decisionComment'
+        'status', 'version', 'submittedAt', 'submittedBy', 'decidedAt', 'decidedBy', 'decisionComment',
+        'priceDocumentMode', 'priceDocumentStatus', 'releasedAt', 'releasedBy',
+        'documentDecidedAt', 'documentDecidedBy', 'documentDecisionComment'
       ];
       if (protectedFields.some((field) => Object.prototype.hasOwnProperty.call(req.data, field))) {
         req.reject(400, 'Workflow-controlled fields can be changed only through submit and decision actions.');
@@ -97,11 +137,489 @@ module.exports = class RmcService extends cds.ApplicationService {
       };
     });
 
+    this.on('getPricingWorkbench', async (req) => {
+      const workbench = await this.#pricingWorkbench(cds.tx(req), entities, req, req.data.priceChangeID);
+      return workbench.summary;
+    });
+
+    this.on('getCostSheet', async (req) => {
+      const workbench = await this.#pricingWorkbench(cds.tx(req), entities, req, req.data.priceChangeID);
+      return workbench.lines;
+    });
+
+    this.on('getImpactBreakdown', async (req) => {
+      const workbench = await this.#pricingWorkbench(cds.tx(req), entities, req, req.data.priceChangeID);
+      return workbench.breakdown;
+    });
+
+    this.on('getImpactedParts', async (req) => {
+      const workbench = await this.#pricingWorkbench(cds.tx(req), entities, req, req.data.priceChangeID);
+      return workbench.impactedParts;
+    });
+
+    this.on('createCommodity', async (req) => {
+      let draft;
+      try {
+        draft = normalizeCommodityDraft(req.data);
+      } catch (error) {
+        req.reject(400, error.message);
+      }
+      const tx = cds.tx(req);
+      const duplicate = await tx.run(SELECT.one.from(entities.Commodities).where({ code: draft.code }));
+      if (duplicate) req.reject(409, `Commodity ${draft.code} already exists.`);
+      const ID = cds.utils.uuid();
+      await tx.run(INSERT.into(entities.Commodities).entries({
+        ID,
+        ...draft,
+        status: lifecycleStatus(draft.validTo, false),
+        markedForDeletion: false,
+        owner: actor(req),
+        version: 1
+      }));
+      await this.#audit(tx, entities, req, 'COMMODITY', ID, 1, 'CREATED', `Commodity ${draft.code} created.`, 'CommodityAdmin');
+      return tx.run(SELECT.one.from(entities.Commodities).where({ ID }));
+    });
+
+    this.on('closeCommodityValidity', async (req) => {
+      const { commodityID, expectedVersion, validTo } = req.data;
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.Commodities).where({ ID: commodityID }));
+      assertVersion(req, record, expectedVersion);
+      if (!validTo) req.reject(400, 'A valid-to date is required.');
+      try {
+        assertValidity(record.validFrom, validTo);
+      } catch (error) {
+        req.reject(400, error.message);
+      }
+      if (record.validTo && validTo > record.validTo) {
+        req.reject(400, 'Closing validity cannot extend the current valid-to date.');
+      }
+      const nextVersion = Number(record.version) + 1;
+      const status = lifecycleStatus(validTo, record.markedForDeletion);
+      const changed = await tx.run(
+        UPDATE(entities.Commodities)
+          .set({ validTo, status, version: nextVersion })
+          .where({ ID: commodityID, version: Number(expectedVersion) })
+      );
+      if (!changed) req.reject(409, 'The commodity changed after it was loaded.');
+      await this.#audit(tx, entities, req, 'COMMODITY', commodityID, nextVersion, 'VALIDITY_CLOSED', `Validity closed on ${validTo}.`, 'CommodityAdmin');
+      return tx.run(SELECT.one.from(entities.Commodities).where({ ID: commodityID }));
+    });
+
+    this.on('setCommodityDeletionMarker', async (req) => {
+      const { commodityID, expectedVersion } = req.data;
+      const markedForDeletion = req.data.markedForDeletion === true;
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.Commodities).where({ ID: commodityID }));
+      assertVersion(req, record, expectedVersion);
+      if (Boolean(record.markedForDeletion) === markedForDeletion) {
+        req.reject(409, `Commodity is already ${markedForDeletion ? 'marked for deletion' : 'unmarked'}.`);
+      }
+      const nextVersion = Number(record.version) + 1;
+      const status = lifecycleStatus(record.validTo, markedForDeletion);
+      const changed = await tx.run(
+        UPDATE(entities.Commodities)
+          .set({ markedForDeletion, status, version: nextVersion })
+          .where({ ID: commodityID, version: Number(expectedVersion) })
+      );
+      if (!changed) req.reject(409, 'The commodity changed after it was loaded.');
+      const decision = markedForDeletion ? 'DELETION_MARKED' : 'DELETION_CLEARED';
+      await this.#audit(tx, entities, req, 'COMMODITY', commodityID, nextVersion, decision, null, 'CommodityAdmin');
+      return tx.run(SELECT.one.from(entities.Commodities).where({ ID: commodityID }));
+    });
+
+    this.on('searchValidContractItems', async (req) => {
+      const { supplierID, materialID, plant } = req.data;
+      const businessDate = req.data.businessDate || new Date().toISOString().slice(0, 10);
+      if (!supplierID || !materialID || !plant) req.reject(400, 'Supplier, material and plant are required.');
+      const tx = cds.tx(req);
+      const [supplier, material, items, contracts] = await Promise.all([
+        tx.run(SELECT.one.from(entities.Suppliers).where({ ID: supplierID })),
+        tx.run(SELECT.one.from(entities.Materials).where({ ID: materialID })),
+        tx.run(SELECT.from(entities.ContractItems).where({ material_ID: materialID, plant, status: 'ACTIVE' })),
+        tx.run(SELECT.from(entities.Contracts).where({ supplier_ID: supplierID, releaseStatus: 'RELEASED' }))
+      ]);
+      if (!supplier || !material) req.reject(404, 'Supplier or material not found.');
+      this.#assertScope(req, { plant, purchasingOrg: supplier.purchasingOrg, supplierCode: supplier.code });
+      const contractById = new Map(contracts
+        .filter((row) => row.validFrom <= businessDate && row.validTo >= businessDate)
+        .map((row) => [row.ID, row]));
+      return items.filter((item) => contractById.has(item.contract_ID)).map((item) => {
+        const contract = contractById.get(item.contract_ID);
+        return {
+          contractItemID: item.ID,
+          contractNumber: contract.contractNumber,
+          itemNumber: item.itemNumber,
+          supplierCode: supplier.code,
+          materialCode: material.code,
+          plant: item.plant,
+          purchasingOrg: contract.purchasingOrg,
+          companyCode: contract.companyCode,
+          validFrom: contract.validFrom,
+          validTo: contract.validTo,
+          currency: contract.currency,
+          currentPrice: item.currentPrice,
+          priceUnit: item.priceUnit,
+          orderPriceUnit: item.orderPriceUnit
+        };
+      });
+    });
+
+    this.on('createVendorPartLinkage', async (req) => {
+      const data = req.data;
+      if (!data.supplierID || !data.materialID || !data.plant || !data.revisionLevel || !data.validFrom) {
+        req.reject(400, 'Supplier, material, plant, revision and valid-from date are required.');
+      }
+      try {
+        assertValidity(data.validFrom, data.validTo);
+      } catch (error) {
+        req.reject(400, error.message);
+      }
+      const tx = cds.tx(req);
+      const [supplier, material, existing] = await Promise.all([
+        tx.run(SELECT.one.from(entities.Suppliers).where({ ID: data.supplierID })),
+        tx.run(SELECT.one.from(entities.Materials).where({ ID: data.materialID })),
+        tx.run(SELECT.from(entities.VendorPartLinkages).where({ supplier_ID: data.supplierID, material_ID: data.materialID, plant: data.plant, revisionLevel: data.revisionLevel }))
+      ]);
+      if (!supplier || !material) req.reject(404, 'Supplier or material not found.');
+      this.#assertScope(req, { plant: data.plant, purchasingOrg: data.purchasingOrg || supplier.purchasingOrg, supplierCode: supplier.code });
+      if (existing.some((row) => (!row.validTo || row.validTo >= data.validFrom) && (!data.validTo || row.validFrom <= data.validTo))) {
+        req.reject(409, 'An overlapping vendor-part linkage already exists for this revision.');
+      }
+      let contractItem = null;
+      if (data.contractItemID) {
+        contractItem = await this.#validateContract(tx, entities, req, data.contractItemID, data.supplierID, data.materialID, data.plant, data.validFrom);
+      } else if (!String(data.missingContractReason || '').trim()) {
+        req.reject(400, 'A missing-contract reason is required when no valid contract is allocated.');
+      }
+      const ID = cds.utils.uuid();
+      const hasContract = Boolean(contractItem);
+      await tx.run(INSERT.into(entities.VendorPartLinkages).entries({
+        ID,
+        supplier_ID: data.supplierID,
+        material_ID: data.materialID,
+        plant: data.plant,
+        purchasingOrg: data.purchasingOrg || supplier.purchasingOrg,
+        contractItem_ID: contractItem?.ID || null,
+        revisionLevel: String(data.revisionLevel).trim(),
+        validFrom: data.validFrom,
+        validTo: data.validTo || null,
+        status: hasContract ? 'APPROVED' : 'SUBMITTED',
+        contractStatus: hasContract ? 'ALLOCATED' : 'MISSING_CONTRACT',
+        missingContractReason: hasContract ? null : String(data.missingContractReason).trim(),
+        exceptionApprovalStatus: hasContract ? 'NOT_REQUIRED' : 'PENDING_APPROVAL',
+        contractAllocatedBy: hasContract ? actor(req) : null,
+        contractAllocatedAt: hasContract ? new Date().toISOString() : null,
+        createdByPersona: 'BUYER',
+        version: 1
+      }));
+      if (!hasContract) {
+        await this.#createFinding(tx, entities, 'VENDOR_PART_LINKAGE', ID, 'MISSING_CONTRACT', true, String(data.missingContractReason).trim());
+      }
+      await this.#audit(tx, entities, req, 'VENDOR_PART_LINKAGE', ID, 1, hasContract ? 'ALLOCATED' : 'EXCEPTION_REQUESTED', data.missingContractReason, 'Buyer');
+      return tx.run(SELECT.one.from(entities.VendorPartLinkages).where({ ID }));
+    });
+
+    this.on('decideContractException', async (req) => {
+      const normalized = String(req.data.decision || '').toUpperCase();
+      if (!['APPROVE', 'REJECT'].includes(normalized)) req.reject(400, 'Decision must be APPROVE or REJECT.');
+      if (normalized === 'REJECT' && !req.data.comment) req.reject(400, 'A rejection comment is required.');
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.VendorPartLinkages).where({ ID: req.data.linkageID }));
+      assertVersion(req, record, req.data.expectedVersion);
+      if (record.exceptionApprovalStatus !== 'PENDING_APPROVAL') req.reject(409, 'This linkage has no pending contract exception.');
+      const supplier = await tx.run(SELECT.one.from(entities.Suppliers).where({ ID: record.supplier_ID }));
+      this.#assertScope(req, { plant: record.plant, purchasingOrg: record.purchasingOrg, supplierCode: supplier?.code });
+      const approved = normalized === 'APPROVE';
+      const nextVersion = Number(record.version) + 1;
+      const changed = await tx.run(UPDATE(entities.VendorPartLinkages).set({
+        status: approved ? 'APPROVED' : 'REJECTED',
+        contractStatus: approved ? 'MISSING_APPROVED' : 'MISSING_REJECTED',
+        exceptionApprovalStatus: approved ? 'APPROVED' : 'REJECTED',
+        exceptionApprovedBy: actor(req),
+        exceptionApprovedAt: new Date().toISOString(),
+        version: nextVersion
+      }).where({ ID: record.ID, version: Number(req.data.expectedVersion) }));
+      if (!changed) req.reject(409, 'The linkage changed after it was loaded.');
+      if (approved) await this.#closeFindings(tx, entities, 'VENDOR_PART_LINKAGE', record.ID, 'MISSING_CONTRACT', actor(req), req.data.comment || 'Approved no-contract exception.');
+      await this.#audit(tx, entities, req, 'CONTRACT_EXCEPTION', record.ID, nextVersion, approved ? 'APPROVED' : 'REJECTED', req.data.comment, 'CompositionApprover');
+      return tx.run(SELECT.one.from(entities.VendorPartLinkages).where({ ID: record.ID }));
+    });
+
+    this.on('allocateContract', async (req) => {
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.VendorPartLinkages).where({ ID: req.data.linkageID }));
+      assertVersion(req, record, req.data.expectedVersion);
+      const businessDate = req.data.businessDate || record.validFrom;
+      const supplier = await tx.run(SELECT.one.from(entities.Suppliers).where({ ID: record.supplier_ID }));
+      this.#assertScope(req, { plant: record.plant, purchasingOrg: record.purchasingOrg, supplierCode: supplier?.code });
+      const contractItem = await this.#validateContract(tx, entities, req, req.data.contractItemID, record.supplier_ID, record.material_ID, record.plant, businessDate);
+      const nextVersion = Number(record.version) + 1;
+      const changed = await tx.run(UPDATE(entities.VendorPartLinkages).set({
+        contractItem_ID: contractItem.ID,
+        contractStatus: 'ALLOCATED',
+        status: 'APPROVED',
+        contractAllocatedBy: actor(req),
+        contractAllocatedAt: new Date().toISOString(),
+        version: nextVersion
+      }).where({ ID: record.ID, version: Number(req.data.expectedVersion) }));
+      if (!changed) req.reject(409, 'The linkage changed after it was loaded.');
+      await this.#closeFindings(tx, entities, 'VENDOR_PART_LINKAGE', record.ID, 'MISSING_CONTRACT', actor(req), 'Contract allocated later.');
+      await this.#audit(tx, entities, req, 'VENDOR_PART_LINKAGE', record.ID, nextVersion, 'CONTRACT_ALLOCATED', null, 'Buyer');
+      return tx.run(SELECT.one.from(entities.VendorPartLinkages).where({ ID: record.ID }));
+    });
+
+    this.on('getBomHierarchy', async (req) => {
+      const tx = cds.tx(req);
+      return this.#bomHierarchy(tx, entities, req, req.data.materialID, req.data.plant, req.data.keyDate || new Date().toISOString().slice(0, 10));
+    });
+
+    this.on('createCompositionRevision', async (req) => {
+      const tx = cds.tx(req);
+      const linkage = await tx.run(SELECT.one.from(entities.VendorPartLinkages).where({ ID: req.data.linkageID }));
+      assertVersion(req, linkage, req.data.expectedVersion);
+      if (linkage.contractStatus !== 'ALLOCATED' && linkage.exceptionApprovalStatus !== 'APPROVED') {
+        req.reject(409, 'Allocate a valid contract or obtain no-contract exception approval first.');
+      }
+      try {
+        assertValidity(req.data.validFrom, req.data.validTo);
+      } catch (error) {
+        req.reject(400, error.message);
+      }
+      const [supplier, header, existingProfiles] = await Promise.all([
+        tx.run(SELECT.one.from(entities.Suppliers).where({ ID: linkage.supplier_ID })),
+        tx.run(SELECT.one.from(entities.BomHeaders).where({ ID: req.data.bomHeaderID })),
+        tx.run(SELECT.from(entities.PartProfiles).where({ supplier_ID: linkage.supplier_ID, material_ID: linkage.material_ID }))
+      ]);
+      if (!header || header.material_ID !== linkage.material_ID || header.plant !== linkage.plant) req.reject(400, 'The selected BOM does not match the linkage material and plant.');
+      this.#assertScope(req, { plant: linkage.plant, purchasingOrg: linkage.purchasingOrg, supplierCode: supplier?.code });
+      const ID = cds.utils.uuid();
+      const revisionLevel = `${linkage.revisionLevel}.${String(existingProfiles.length + 1).padStart(2, '0')}`;
+      const now = new Date().toISOString();
+      await tx.run(INSERT.into(entities.PartProfiles).entries({
+        ID,
+        linkage_ID: linkage.ID,
+        material_ID: linkage.material_ID,
+        supplier_ID: linkage.supplier_ID,
+        contractItem_ID: linkage.contractItem_ID || null,
+        bomHeader_ID: header.ID,
+        validFrom: req.data.validFrom,
+        validTo: req.data.validTo || null,
+        revisionLevel,
+        bomExplodedAt: now,
+        maxBomDepth: 20,
+        contractExceptionRequired: linkage.contractStatus !== 'ALLOCATED',
+        contractExceptionStatus: linkage.exceptionApprovalStatus,
+        contractAllocatedAt: linkage.contractAllocatedAt,
+        status: 'DRAFT',
+        completenessPct: 0,
+        totalRmContent: 0,
+        version: 1
+      }));
+      const previous = existingProfiles.filter((row) => row.status === 'APPROVED').sort((a, b) => String(b.approvedAt).localeCompare(String(a.approvedAt)))[0];
+      if (previous) {
+        const oldLines = await tx.run(SELECT.from(entities.PartConstituents).where({ profile_ID: previous.ID }));
+        if (oldLines.length) await tx.run(INSERT.into(entities.PartConstituents).entries(oldLines.map((line) => ({
+          ...line, ID: cds.utils.uuid(), profile_ID: ID, version: 1, createdAt: undefined, createdBy: undefined, modifiedAt: undefined, modifiedBy: undefined
+        }))));
+      }
+      await this.#refreshCompositionFindings(tx, entities, req, ID);
+      await this.#audit(tx, entities, req, 'COMPOSITION', ID, 1, 'REVISION_CREATED', null, 'Buyer');
+      return tx.run(SELECT.one.from(entities.PartProfiles).where({ ID }));
+    });
+
+    this.on('mapCompositionLeaf', async (req) => {
+      const tx = cds.tx(req);
+      const profile = await tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: req.data.profileID }));
+      assertVersion(req, profile, req.data.expectedVersion);
+      if (!['DRAFT', 'REJECTED'].includes(profile.status)) req.reject(409, `A ${profile.status} composition cannot be edited.`);
+      const [supplier, grade, subGrade] = await Promise.all([
+        tx.run(SELECT.one.from(entities.Suppliers).where({ ID: profile.supplier_ID })),
+        tx.run(SELECT.one.from(entities.RawMaterialGrades).where({ ID: req.data.gradeID })),
+        req.data.subGradeID ? tx.run(SELECT.one.from(entities.RawMaterialSubGrades).where({ ID: req.data.subGradeID })) : null
+      ]);
+      this.#assertScope(req, { plant: (await tx.run(SELECT.one.from(entities.Materials).where({ ID: profile.material_ID })))?.plant, supplierCode: supplier?.code });
+      if (!grade || grade.status !== 'ACTIVE' || grade.markedForDeletion) req.reject(400, 'Select an active RM grade.');
+      if (subGrade && (subGrade.grade_ID !== grade.ID || subGrade.status !== 'ACTIVE' || subGrade.markedForDeletion)) req.reject(400, 'The selected subgrade is not active under this grade.');
+      if (!req.data.uoM || decimal(req.data.inputWeight || 0).lte(0) || decimal(req.data.outputWeight || 0).lte(0) || decimal(req.data.scrapWeight || 0).lt(0)) {
+        req.reject(400, 'Positive input/output weights, non-negative scrap and UoM are required.');
+      }
+      if (decimal(req.data.outputWeight).plus(req.data.scrapWeight || 0).gt(req.data.inputWeight)) req.reject(400, 'Output plus scrap cannot exceed input weight.');
+      const material = await tx.run(SELECT.one.from(entities.Materials).where({ ID: profile.material_ID }));
+      const nodes = await this.#bomHierarchy(tx, entities, req, profile.material_ID, material.plant, profile.validFrom);
+      const leaf = nodes.find((node) => node.bomItemID === req.data.bomItemID && node.leafPart);
+      if (!leaf) req.reject(400, 'Composition can be mapped only to a BOM leaf.');
+      const existing = await tx.run(SELECT.one.from(entities.PartConstituents).where({ profile_ID: profile.ID, bomItem_ID: leaf.bomItemID }));
+      const line = {
+        profile_ID: profile.ID,
+        bomItem_ID: leaf.bomItemID,
+        grade_ID: grade.ID,
+        subGrade_ID: subGrade?.ID || null,
+        parentMaterial_ID: leaf.parentMaterialID,
+        hierarchyDepth: leaf.hierarchyDepth,
+        lineagePath: leaf.lineagePath,
+        leafPart: true,
+        contentQuantity: req.data.outputWeight,
+        contentUoM: String(req.data.uoM).toUpperCase(),
+        inputWeight: req.data.inputWeight,
+        outputWeight: req.data.outputWeight,
+        scrapWeight: req.data.scrapWeight || 0,
+        yieldFactor: decimal(req.data.outputWeight).div(req.data.inputWeight).toFixed(9),
+        scrapFactor: 1,
+        source: req.data.overrideReason ? 'MANUAL' : 'BOM',
+        overrideReason: req.data.overrideReason || null
+      };
+      if (existing) await tx.run(UPDATE(entities.PartConstituents).set({ ...line, version: Number(existing.version) + 1 }).where({ ID: existing.ID, version: Number(existing.version) }));
+      else await tx.run(INSERT.into(entities.PartConstituents).entries({ ID: cds.utils.uuid(), ...line, version: 1 }));
+      const nextVersion = Number(profile.version) + 1;
+      await tx.run(UPDATE(entities.PartProfiles).set({ version: nextVersion }).where({ ID: profile.ID, version: Number(req.data.expectedVersion) }));
+      await this.#refreshCompositionFindings(tx, entities, req, profile.ID);
+      return tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: profile.ID }));
+    });
+
+    this.on('submitComposition', async (req) => {
+      const tx = cds.tx(req);
+      const profile = await tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: req.data.profileID }));
+      assertVersion(req, profile, req.data.expectedVersion);
+      if (!['DRAFT', 'REJECTED'].includes(profile.status)) req.reject(409, `A ${profile.status} composition cannot be submitted.`);
+      await this.#refreshCompositionFindings(tx, entities, req, profile.ID);
+      const open = await tx.run(SELECT.one.from(entities.WorkflowExceptions).where({ objectType: 'COMPOSITION', objectID: profile.ID, mandatory: true, status: 'OPEN' }));
+      if (open) req.reject(409, `Resolve mandatory finding ${open.code} before submission.`);
+      const nextVersion = Number(profile.version) + 1;
+      await tx.run(UPDATE(entities.PartProfiles).set({ status: 'SUBMITTED', submittedAt: new Date().toISOString(), submittedBy: actor(req), version: nextVersion }).where({ ID: profile.ID, version: Number(req.data.expectedVersion) }));
+      await this.#audit(tx, entities, req, 'COMPOSITION', profile.ID, nextVersion, 'SUBMITTED', null, 'Buyer');
+      return tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: profile.ID }));
+    });
+
+    this.on('decideComposition', async (req) => {
+      const normalized = String(req.data.decision || '').toUpperCase();
+      if (!['APPROVE', 'REJECT'].includes(normalized)) req.reject(400, 'Decision must be APPROVE or REJECT.');
+      if (normalized === 'REJECT' && !req.data.comment) req.reject(400, 'A rejection comment is required.');
+      const tx = cds.tx(req);
+      const profile = await tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: req.data.profileID }));
+      assertVersion(req, profile, req.data.expectedVersion);
+      if (profile.status !== 'SUBMITTED') req.reject(409, `A ${profile.status} composition cannot be decided.`);
+      await this.#refreshCompositionFindings(tx, entities, req, profile.ID);
+      const open = await tx.run(SELECT.one.from(entities.WorkflowExceptions).where({ objectType: 'COMPOSITION', objectID: profile.ID, mandatory: true, status: 'OPEN' }));
+      if (normalized === 'APPROVE' && open) req.reject(409, `Approval is blocked by ${open.code}.`);
+      const approved = normalized === 'APPROVE';
+      const nextVersion = Number(profile.version) + 1;
+      const constituents = await tx.run(SELECT.from(entities.PartConstituents).where({ profile_ID: profile.ID }));
+      const totalRmContent = constituents.reduce((sum, row) => sum.plus(row.outputWeight || 0), decimal(0)).toFixed(9);
+      await tx.run(UPDATE(entities.PartProfiles).set({
+        status: approved ? 'APPROVED' : 'REJECTED',
+        approvedAt: approved ? new Date().toISOString() : null,
+        approvedBy: approved ? actor(req) : null,
+        snapshotHash: approved ? stableHash({ profile, constituents }) : null,
+        totalRmContent,
+        normalizedUoM: constituents[0]?.contentUoM || null,
+        version: nextVersion
+      }).where({ ID: profile.ID, version: Number(req.data.expectedVersion) }));
+      await this.#audit(tx, entities, req, 'COMPOSITION', profile.ID, nextVersion, approved ? 'APPROVED' : 'REJECTED', req.data.comment, 'CompositionApprover');
+      return tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: profile.ID }));
+    });
+
+    this.on('resolveWorkflowException', async (req) => {
+      if (!String(req.data.resolution || '').trim()) req.reject(400, 'A resolution comment is required.');
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.WorkflowExceptions).where({ ID: req.data.exceptionID }));
+      assertVersion(req, record, req.data.expectedVersion);
+      if (record.status !== 'OPEN') req.reject(409, `A ${record.status} finding cannot be resolved again.`);
+      if (req.data.exclude && record.mandatory) req.reject(409, 'Mandatory findings cannot be excluded. Correct the underlying data.');
+      const nextVersion = Number(record.version) + 1;
+      await tx.run(UPDATE(entities.WorkflowExceptions).set({
+        status: req.data.exclude ? 'EXCLUDED' : 'RESOLVED',
+        resolution: String(req.data.resolution).trim(),
+        resolvedBy: actor(req),
+        resolvedAt: new Date().toISOString(),
+        version: nextVersion
+      }).where({ ID: record.ID, version: Number(req.data.expectedVersion) }));
+      await this.#audit(tx, entities, req, 'WORKFLOW_EXCEPTION', record.ID, nextVersion, req.data.exclude ? 'EXCLUDED' : 'RESOLVED', req.data.resolution, 'CompositionApprover');
+      return tx.run(SELECT.one.from(entities.WorkflowExceptions).where({ ID: record.ID }));
+    });
+
+    this.on('reconcilePriceChange', async (req) => {
+      const tx = cds.tx(req);
+      const priceChange = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: req.data.priceChangeID }));
+      if (!priceChange) req.reject(404, 'Price change not found.');
+      if (priceChange.priceDocumentStatus !== 'APPROVED') req.reject(409, 'Only an approved price document can be reconciled.');
+      const proposal = await tx.run(SELECT.one.from(entities.ContractPriceProposals).where({ priceChange_ID: priceChange.ID }).orderBy('createdAt desc'));
+      if (!proposal) req.reject(409, 'No approved contract-price proposal exists for reconciliation.');
+      const workbench = await this.#pricingWorkbench(tx, entities, req, priceChange.ID);
+      const expected = decimal(workbench.summary.revisedPoPrice);
+      const actual = decimal(proposal.proposedPrice);
+      const difference = actual.minus(expected);
+      const ID = cds.utils.uuid();
+      await tx.run(INSERT.into(entities.ReconciliationRecords).entries({
+        ID,
+        objectType: 'PRICE_CHANGE',
+        objectID: priceChange.ID,
+        expectedAmount: expected.toFixed(6),
+        actualAmount: actual.toFixed(6),
+        differenceAmount: difference.toFixed(6),
+        currency: proposal.currency,
+        status: difference.isZero() ? 'MATCHED' : 'DIFFERENCE',
+        explanation: difference.isZero() ? 'Approved proposal matches the server-calculated workbench price.' : 'Approved proposal differs from the server-calculated workbench price.',
+        reconciledBy: actor(req),
+        reconciledAt: new Date().toISOString(),
+        version: 1
+      }));
+      await this.#audit(tx, entities, req, 'RECONCILIATION', ID, 1, difference.isZero() ? 'MATCHED' : 'DIFFERENCE', null, 'RmcAuditor');
+      return tx.run(SELECT.one.from(entities.ReconciliationRecords).where({ ID }));
+    });
+
+    this.on('submitRmMasterRequest', async (req) => {
+      const { requestID, expectedVersion } = req.data;
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.RawMaterialMasterRequests).where({ ID: requestID }));
+      assertVersion(req, record, expectedVersion);
+      if (!['DRAFT', 'REJECTED'].includes(record.status)) req.reject(409, `A ${record.status} request cannot be submitted.`);
+      const changed = await tx.run(
+        UPDATE(entities.RawMaterialMasterRequests)
+          .set({ status: 'SUBMITTED', submittedAt: new Date().toISOString(), version: Number(record.version) + 1 })
+          .where({ ID: requestID, version: Number(expectedVersion) })
+      );
+      if (!changed) req.reject(409, 'The request changed after it was loaded.');
+      await this.#audit(tx, entities, req, 'RM_MASTER_REQUEST', requestID, Number(record.version) + 1, 'SUBMITTED', null, 'Buyer');
+      return tx.run(SELECT.one.from(entities.RawMaterialMasterRequests).where({ ID: requestID }));
+    });
+
+    this.on('decideRmMasterRequest', async (req) => {
+      const { requestID, expectedVersion, decision, comment } = req.data;
+      const normalized = String(decision || '').toUpperCase();
+      if (!['APPROVE', 'REJECT'].includes(normalized)) req.reject(400, 'Decision must be APPROVE or REJECT.');
+      if (normalized === 'REJECT' && !comment) req.reject(400, 'A rejection comment is required.');
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.RawMaterialMasterRequests).where({ ID: requestID }));
+      assertVersion(req, record, expectedVersion);
+      if (record.status !== 'SUBMITTED') req.reject(409, `A ${record.status} request cannot be decided.`);
+
+      let createdObjectID = null;
+      if (normalized === 'APPROVE') createdObjectID = await this.#createRequestedMaster(tx, entities, req, record);
+      const status = normalized === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+      const changed = await tx.run(
+        UPDATE(entities.RawMaterialMasterRequests)
+          .set({
+            status,
+            decidedBy: actor(req),
+            decidedAt: new Date().toISOString(),
+            decisionComment: comment || null,
+            createdObjectID,
+            version: Number(record.version) + 1
+          })
+          .where({ ID: requestID, version: Number(expectedVersion) })
+      );
+      if (!changed) req.reject(409, 'The request changed after it was loaded.');
+      await this.#audit(tx, entities, req, 'RM_MASTER_REQUEST', requestID, Number(record.version) + 1, status, comment, 'RmAdmin');
+      return tx.run(SELECT.one.from(entities.RawMaterialMasterRequests).where({ ID: requestID }));
+    });
+
     this.on('submitPriceChange', async (req) => {
       const { priceChangeID, expectedVersion } = req.data;
       const tx = cds.tx(req);
       const record = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
       assertVersion(req, record, expectedVersion);
+      await this.#assertPriceScope(tx, entities, req, record);
       if (!['DRAFT', 'REJECTED'].includes(record.status)) req.reject(409, `A ${record.status} request cannot be submitted.`);
       if (decimal(record.proposedPrice).lte(0)) req.reject(400, 'Proposed price must be greater than zero.');
 
@@ -133,6 +651,7 @@ module.exports = class RmcService extends cds.ApplicationService {
       const tx = cds.tx(req);
       const record = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
       assertVersion(req, record, expectedVersion);
+      await this.#assertPriceScope(tx, entities, req, record);
       if (!['SUBMITTED', 'UNDER_REVIEW'].includes(record.status)) req.reject(409, `A ${record.status} request cannot be decided.`);
 
       const settings = toConfig(await tx.run(SELECT.from(entities.AppSettings)));
@@ -156,6 +675,97 @@ module.exports = class RmcService extends cds.ApplicationService {
       );
       if (!changed) req.reject(409, 'The request was changed by another user. Reload and try again.');
       await this.#audit(tx, entities, req, 'PRICE_CHANGE', priceChangeID, Number(record.version) + 1, status, comment, requiredRole);
+      return tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
+    });
+
+    this.on('releasePriceDocument', async (req) => {
+      const { priceChangeID, expectedVersion } = req.data;
+      const mode = String(req.data.mode || '').toUpperCase();
+      if (!['SIMULATION', 'AMENDMENT'].includes(mode)) req.reject(400, 'Mode must be SIMULATION or AMENDMENT.');
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
+      assertVersion(req, record, expectedVersion);
+      await this.#assertPriceScope(tx, entities, req, record);
+      if (record.status !== 'APPROVED') req.reject(409, 'The revised RM price must be approved before releasing a price document.');
+      if (!['BLOCKED', 'REJECTED', 'SIMULATION_ONLY'].includes(record.priceDocumentStatus || 'BLOCKED')) {
+        req.reject(409, `A ${record.priceDocumentStatus} price document cannot be released again.`);
+      }
+      const priceDocumentStatus = mode === 'SIMULATION' ? 'SIMULATION_ONLY' : 'RELEASED_FOR_APPROVAL';
+      const changed = await tx.run(
+        UPDATE(entities.PriceChangeRequests)
+          .set({
+            priceDocumentMode: mode,
+            priceDocumentStatus,
+            releasedAt: new Date().toISOString(),
+            releasedBy: actor(req),
+            documentDecidedAt: null,
+            documentDecidedBy: null,
+            documentDecisionComment: null,
+            version: Number(record.version) + 1
+          })
+          .where({ ID: priceChangeID, version: Number(expectedVersion) })
+      );
+      if (!changed) req.reject(409, 'The price document changed after it was loaded.');
+      await this.#audit(tx, entities, req, 'PRICE_DOCUMENT', priceChangeID, Number(record.version) + 1, priceDocumentStatus, null, 'Buyer');
+      return tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
+    });
+
+    this.on('decidePriceDocument', async (req) => {
+      const { priceChangeID, expectedVersion, decision, comment } = req.data;
+      const normalized = String(decision || '').toUpperCase();
+      if (!['APPROVE', 'REJECT'].includes(normalized)) req.reject(400, 'Decision must be APPROVE or REJECT.');
+      if (normalized === 'REJECT' && !comment) req.reject(400, 'A rejection comment is required.');
+      const tx = cds.tx(req);
+      const record = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
+      assertVersion(req, record, expectedVersion);
+      await this.#assertPriceScope(tx, entities, req, record);
+      if (record.priceDocumentStatus !== 'RELEASED_FOR_APPROVAL') {
+        req.reject(409, `A ${record.priceDocumentStatus || 'BLOCKED'} price document cannot be decided.`);
+      }
+      const status = normalized === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+      const changed = await tx.run(
+        UPDATE(entities.PriceChangeRequests)
+          .set({
+            priceDocumentStatus: status,
+            documentDecidedAt: new Date().toISOString(),
+            documentDecidedBy: actor(req),
+            documentDecisionComment: comment || null,
+            version: Number(record.version) + 1
+          })
+          .where({ ID: priceChangeID, version: Number(expectedVersion) })
+      );
+      if (!changed) req.reject(409, 'The price document changed after it was loaded.');
+      if (normalized === 'APPROVE') {
+        const existingProposal = await tx.run(
+          SELECT.one.from(entities.ContractPriceProposals).where({ priceChange_ID: priceChangeID })
+        );
+        if (!existingProposal) {
+          const workbench = await this.#pricingWorkbench(tx, entities, req, priceChangeID);
+          const profile = await tx.run(
+            SELECT.one.from(entities.PartProfiles)
+              .where({ supplier_ID: record.supplier_ID, status: 'APPROVED' })
+              .orderBy('version desc')
+          );
+          if (!profile?.contractItem_ID) req.reject(409, 'An approved contract-linked part profile is required for the contract-price handoff.');
+          const proposalID = cds.utils.uuid();
+          await tx.run(INSERT.into(entities.ContractPriceProposals).entries({
+            ID: proposalID,
+            proposalNumber: `CPP-${record.requestNumber}-${proposalID.slice(0, 4).toUpperCase()}`,
+            priceChange_ID: priceChangeID,
+            contractItem_ID: profile.contractItem_ID,
+            oldPrice: workbench.summary.currentPoPrice,
+            proposedPrice: workbench.summary.revisedPoPrice,
+            currency: workbench.summary.currency,
+            priceUnit: 1,
+            validFrom: record.validFrom,
+            validTo: record.validTo,
+            status: 'APPROVED',
+            s4WorkflowStatus: 'DEMO_HANDOFF_READY',
+            version: 1
+          }));
+        }
+      }
+      await this.#audit(tx, entities, req, 'PRICE_DOCUMENT', priceChangeID, Number(record.version) + 1, status, comment, 'CompositionApprover');
       return tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
     });
 
@@ -204,6 +814,46 @@ module.exports = class RmcService extends cds.ApplicationService {
       return tx.run(SELECT.one.from(entities.CalculationRuns).where({ ID }));
     });
 
+    this.on('rerunCalculation', async (req) => {
+      const { runID, expectedVersion, priority = 100 } = req.data;
+      const reason = String(req.data.reason || '').trim();
+      if (!reason) req.reject(400, 'A rerun reason is required.');
+      const tx = cds.tx(req);
+      const original = await tx.run(SELECT.one.from(entities.CalculationRuns).where({ ID: runID }));
+      assertVersion(req, original, expectedVersion);
+      if (['QUEUED', 'RUNNING'].includes(original.status)) req.reject(409, `A ${original.status} calculation cannot be rerun.`);
+      const activeRerun = await tx.run(SELECT.one.from(entities.CalculationRuns).where({
+        rerunOf_ID: original.ID,
+        status: { in: ['QUEUED', 'RUNNING'] }
+      }));
+      if (activeRerun) req.reject(409, `Rerun ${activeRerun.runNumber} is already active.`);
+      const priceChange = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: original.priceChange_ID }));
+      if (!priceChange || priceChange.status !== 'APPROVED') req.reject(409, 'The source price change must remain approved for a rerun.');
+      await this.#assertPriceScope(tx, entities, req, priceChange);
+      const ID = cds.utils.uuid();
+      const now = new Date();
+      const runNumber = `RER-${now.toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}-${ID.slice(0, 6).toUpperCase()}`;
+      await tx.run(INSERT.into(entities.CalculationRuns).entries({
+        ID,
+        runNumber,
+        rerunOf_ID: original.ID,
+        rerunReason: reason,
+        priceChange_ID: original.priceChange_ID,
+        periodFrom: original.periodFrom,
+        periodTo: original.periodTo,
+        cutoffAt: now.toISOString(),
+        status: 'QUEUED',
+        priority: Math.max(1, Math.min(999, Number(priority || original.priority || 100))),
+        requestedBy: actor(req),
+        currency: original.currency,
+        configSnapshot: original.configSnapshot,
+        version: 1
+      }));
+      await this.#audit(tx, entities, req, 'CALCULATION_RUN', ID, 1, 'RERUN_QUEUED', reason, 'Buyer');
+      await this.#event(tx, entities, 'INFO', 'CALCULATION', req, 'CALCULATION_RUN', ID, `${runNumber} was queued as a rerun of ${original.runNumber}.`);
+      return tx.run(SELECT.one.from(entities.CalculationRuns).where({ ID }));
+    });
+
     this.on('decideCalculation', async (req) => {
       const { runID, expectedVersion, decision, comment } = req.data;
       const normalizedDecision = String(decision || '').toUpperCase();
@@ -247,6 +897,30 @@ module.exports = class RmcService extends cds.ApplicationService {
       return tx.run(SELECT.one.from(entities.PostingRecords).where({ ID }));
     });
 
+    this.on('reverseSimulatedPosting', async (req) => {
+      const reason = String(req.data.reason || '').trim();
+      if (!reason) req.reject(400, 'A reversal reason is required.');
+      const tx = cds.tx(req);
+      const posting = await tx.run(SELECT.one.from(entities.PostingRecords).where({ ID: req.data.postingID }));
+      if (!posting) req.reject(404, 'Posting simulation not found.');
+      if (!posting.simulated || posting.status !== 'SIMULATED') req.reject(409, 'Only an unreversed simulated posting can be reversed here.');
+      const existing = await tx.run(SELECT.one.from(entities.PostingRecords).where({ reversalOf: posting.ID }));
+      if (existing) return existing;
+      const result = await postingAdapter.reverseSimulation({ posting, user: actor(req), reason });
+      const replay = await tx.run(SELECT.one.from(entities.PostingRecords).where({ idempotencyKey: result.idempotencyKey }));
+      if (replay) return replay;
+      const ID = cds.utils.uuid();
+      await tx.run(INSERT.into(entities.PostingRecords).entries({
+        ID,
+        objectType: posting.objectType,
+        objectID: posting.objectID,
+        ...result
+      }));
+      await this.#audit(tx, entities, req, 'POSTING_REVERSAL', ID, 1, 'REVERSED', reason, 'RmcFinance');
+      await this.#event(tx, entities, 'INFO', 'POSTING', req, posting.objectType, posting.objectID, result.message);
+      return tx.run(SELECT.one.from(entities.PostingRecords).where({ ID }));
+    });
+
     this.on('createContractProposal', async (req) => {
       const { runID, contractItemID, validFrom } = req.data;
       const tx = cds.tx(req);
@@ -281,6 +955,241 @@ module.exports = class RmcService extends cds.ApplicationService {
     });
 
     await super.init();
+  }
+
+  async #pricingWorkbench(tx, entities, req, priceChangeID) {
+    const priceChange = await tx.run(
+      SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID })
+    );
+    if (!priceChange) req.reject(404, 'Price change request not found.');
+
+    const supplier = await tx.run(
+      SELECT.one.from(entities.Suppliers).where({ ID: priceChange.supplier_ID })
+    );
+    const profiles = await tx.run(
+      SELECT.from(entities.PartProfiles)
+        .where({ supplier_ID: priceChange.supplier_ID, status: 'APPROVED' })
+        .orderBy('version desc')
+    );
+    const profile = profiles.find(
+      (candidate) => candidate.validFrom <= priceChange.validFrom && (!candidate.validTo || candidate.validTo >= priceChange.validFrom)
+    );
+    if (!profile) req.reject(409, 'No approved supplier part profile is effective for this price change.');
+
+    const [material, contractItem, constituents] = await Promise.all([
+      tx.run(SELECT.one.from(entities.Materials).where({ ID: profile.material_ID })),
+      tx.run(SELECT.one.from(entities.ContractItems).where({ ID: profile.contractItem_ID })),
+      tx.run(SELECT.from(entities.PartConstituents).where({ profile_ID: profile.ID }).orderBy('createdAt asc'))
+    ]);
+    if (!contractItem) req.reject(409, 'The approved part profile is not linked to a contract item.');
+
+    const gradeIds = [...new Set(constituents.map((row) => row.grade_ID))];
+    const subGradeIds = [...new Set(constituents.map((row) => row.subGrade_ID).filter(Boolean))];
+    const bomItemIds = [...new Set(constituents.map((row) => row.bomItem_ID).filter(Boolean))];
+    const [contract, grades, subGrades, bomItems, vendorPrices, movementRules, receipts] = await Promise.all([
+      tx.run(SELECT.one.from(entities.Contracts).where({ ID: contractItem.contract_ID })),
+      gradeIds.length ? tx.run(SELECT.from(entities.RawMaterialGrades).where({ ID: { in: gradeIds } })) : [],
+      subGradeIds.length ? tx.run(SELECT.from(entities.RawMaterialSubGrades).where({ ID: { in: subGradeIds } })) : [],
+      bomItemIds.length ? tx.run(SELECT.from(entities.BomItems).where({ ID: { in: bomItemIds } })) : [],
+      tx.run(SELECT.from(entities.VendorPrices).where({ supplier_ID: priceChange.supplier_ID })),
+      tx.run(SELECT.from(entities.MovementTypeRules)),
+      tx.run(
+        SELECT.from(entities.GoodsReceipts).where({
+          supplier_ID: priceChange.supplier_ID,
+          material_ID: profile.material_ID,
+          postingDate: { between: priceChange.validFrom, and: priceChange.validTo || priceChange.validFrom }
+        })
+      )
+    ]);
+
+    const movementMap = new Map(movementRules.map((rule) => [rule.movementType, rule]));
+    let eligibleReceiptCount = 0;
+    const eligibleQuantity = receipts.reduce((total, receipt) => {
+      const rule = movementMap.get(receipt.movementType);
+      if (!rule?.eligible || (rule.requiresReference && !receipt.reversalOf)) return total;
+      eligibleReceiptCount += 1;
+      return total.plus(decimal(receipt.quantity).times(rule.quantitySign));
+    }, decimal(0));
+
+    return buildPricingWorkbench({
+      priceChange,
+      supplier,
+      profile,
+      material,
+      contractItem,
+      contract,
+      constituents,
+      grades,
+      subGrades,
+      bomItems,
+      vendorPrices,
+      eligibleQuantity,
+      eligibleReceiptCount
+    });
+  }
+
+  async #createRequestedMaster(tx, entities, req, record) {
+    const now = new Date().toISOString();
+    const ID = cds.utils.uuid();
+    if (record.requestType === 'TYPE') {
+      if (!record.commodity_ID || !record.defaultPriceUoM || !record.defaultCurrency) {
+        req.reject(400, 'Commodity, default price UoM and currency are required for an RM type.');
+      }
+      const duplicate = await tx.run(SELECT.one.from(entities.RawMaterialTypes).where({ code: record.proposedCode }));
+      if (duplicate) req.reject(409, `RM type ${record.proposedCode} already exists.`);
+      await tx.run(INSERT.into(entities.RawMaterialTypes).entries({
+        ID,
+        code: record.proposedCode,
+        name: record.proposedName,
+        commodity_ID: record.commodity_ID,
+        defaultPriceUoM: record.defaultPriceUoM,
+        defaultCurrency: record.defaultCurrency,
+        owner: 'RM Admin',
+        validFrom: record.validFrom,
+        validTo: record.validTo,
+        status: 'ACTIVE',
+        markedForDeletion: false,
+        approvedAt: now,
+        approvedBy: actor(req),
+        version: 1
+      }));
+    } else if (record.requestType === 'GRADE') {
+      if (!record.rawMaterialType_ID) req.reject(400, 'Parent RM type is required for a grade.');
+      const duplicate = await tx.run(SELECT.one.from(entities.RawMaterialGrades).where({ rawMaterialType_ID: record.rawMaterialType_ID, code: record.proposedCode }));
+      if (duplicate) req.reject(409, `RM grade ${record.proposedCode} already exists for this type.`);
+      await tx.run(INSERT.into(entities.RawMaterialGrades).entries({
+        ID,
+        rawMaterialType_ID: record.rawMaterialType_ID,
+        code: record.proposedCode,
+        name: record.proposedName,
+        specification: record.specification,
+        defaultYieldFactor: 1,
+        validFrom: record.validFrom,
+        validTo: record.validTo,
+        status: 'ACTIVE',
+        markedForDeletion: false,
+        approvedAt: now,
+        approvedBy: actor(req),
+        version: 1
+      }));
+    } else {
+      if (!record.grade_ID) req.reject(400, 'Parent RM grade is required for a subgrade.');
+      const duplicate = await tx.run(SELECT.one.from(entities.RawMaterialSubGrades).where({ grade_ID: record.grade_ID, code: record.proposedCode }));
+      if (duplicate) req.reject(409, `RM subgrade ${record.proposedCode} already exists for this grade.`);
+      await tx.run(INSERT.into(entities.RawMaterialSubGrades).entries({
+        ID,
+        grade_ID: record.grade_ID,
+        code: record.proposedCode,
+        name: record.proposedName,
+        specification: record.specification,
+        classification: record.classification,
+        validFrom: record.validFrom,
+        validTo: record.validTo,
+        status: 'ACTIVE',
+        markedForDeletion: false,
+        approvedAt: now,
+        approvedBy: actor(req),
+        version: 1
+      }));
+    }
+    return ID;
+  }
+
+  #assertScope(req, target) {
+    if (process.env.RMC_DEMO_MODE !== 'false') return;
+    if (!isInOrganizationalScope(req.user, target)) {
+      req.reject(403, 'The user is outside the required company, purchasing organization, plant or supplier scope.');
+    }
+  }
+
+  async #assertPriceScope(tx, entities, req, record) {
+    const supplier = await tx.run(SELECT.one.from(entities.Suppliers).where({ ID: record.supplier_ID }));
+    this.#assertScope(req, {
+      companyCode: supplier?.companyCode,
+      purchasingOrg: record.purchasingOrg || supplier?.purchasingOrg,
+      plant: record.plant,
+      supplierCode: supplier?.code
+    });
+  }
+
+  async #validateContract(tx, entities, req, contractItemID, supplierID, materialID, plant, businessDate) {
+    if (!contractItemID) req.reject(400, 'A contract item is required.');
+    const item = await tx.run(SELECT.one.from(entities.ContractItems).where({ ID: contractItemID }));
+    if (!item || item.material_ID !== materialID || item.plant !== plant || item.status !== 'ACTIVE') {
+      req.reject(400, 'The contract item is not active for the selected material and plant.');
+    }
+    const contract = await tx.run(SELECT.one.from(entities.Contracts).where({ ID: item.contract_ID }));
+    if (!contract || contract.supplier_ID !== supplierID || contract.releaseStatus !== 'RELEASED' || contract.validFrom > businessDate || contract.validTo < businessDate) {
+      req.reject(400, 'The contract is not released and valid for the selected supplier and business date.');
+    }
+    return item;
+  }
+
+  async #bomHierarchy(tx, entities, req, materialID, plant, keyDate) {
+    if (!materialID || !plant || !keyDate) req.reject(400, 'Material, plant and key date are required for BOM explosion.');
+    const [headers, items, materials] = await Promise.all([
+      tx.run(SELECT.from(entities.BomHeaders)),
+      tx.run(SELECT.from(entities.BomItems)),
+      tx.run(SELECT.from(entities.Materials))
+    ]);
+    try {
+      return explodeBom({ rootMaterialID: materialID, plant, keyDate, headers, items, materials });
+    } catch (error) {
+      req.reject(400, error.message);
+    }
+  }
+
+  async #createFinding(tx, entities, objectType, objectID, code, mandatory, message) {
+    const existing = await tx.run(SELECT.one.from(entities.WorkflowExceptions).where({ objectType, objectID, code, status: 'OPEN' }));
+    if (existing) return existing;
+    const ID = cds.utils.uuid();
+    await tx.run(INSERT.into(entities.WorkflowExceptions).entries({
+      ID, objectType, objectID, code, severity: mandatory ? 'ERROR' : 'WARNING', mandatory,
+      status: 'OPEN', message, version: 1
+    }));
+    return tx.run(SELECT.one.from(entities.WorkflowExceptions).where({ ID }));
+  }
+
+  async #closeFindings(tx, entities, objectType, objectID, code, resolvedBy, resolution) {
+    const rows = await tx.run(SELECT.from(entities.WorkflowExceptions).where({ objectType, objectID, code, status: 'OPEN' }));
+    for (const row of rows) {
+      await tx.run(UPDATE(entities.WorkflowExceptions).set({
+        status: 'RESOLVED', resolution, resolvedBy, resolvedAt: new Date().toISOString(), version: Number(row.version) + 1
+      }).where({ ID: row.ID, version: Number(row.version) }));
+    }
+  }
+
+  async #refreshCompositionFindings(tx, entities, req, profileID) {
+    const profile = await tx.run(SELECT.one.from(entities.PartProfiles).where({ ID: profileID }));
+    if (!profile) req.reject(404, 'Composition profile not found.');
+    const material = await tx.run(SELECT.one.from(entities.Materials).where({ ID: profile.material_ID }));
+    const [nodes, constituents, existing] = await Promise.all([
+      this.#bomHierarchy(tx, entities, req, profile.material_ID, material.plant, profile.validFrom),
+      tx.run(SELECT.from(entities.PartConstituents).where({ profile_ID: profile.ID })),
+      tx.run(SELECT.from(entities.WorkflowExceptions).where({ objectType: 'COMPOSITION', objectID: profile.ID }))
+    ]);
+    const assessment = assessComposition(nodes, constituents);
+    if (profile.contractExceptionRequired && profile.contractExceptionStatus !== 'APPROVED') {
+      assessment.findings.push({ code: 'CONTRACT_EXCEPTION_PENDING', mandatory: true, message: 'No-contract exception approval is required.' });
+    }
+    const currentCodes = new Set(assessment.findings.map((finding) => finding.code));
+    for (const finding of assessment.findings) {
+      const row = existing.find((candidate) => candidate.code === finding.code);
+      if (!row) {
+        await this.#createFinding(tx, entities, 'COMPOSITION', profile.ID, finding.code, finding.mandatory, finding.message);
+      } else if (row.status !== 'OPEN' && !(row.status === 'EXCLUDED' && !finding.mandatory)) {
+        await tx.run(UPDATE(entities.WorkflowExceptions).set({
+          status: 'OPEN', message: finding.message, resolution: null, resolvedBy: null, resolvedAt: null, version: Number(row.version) + 1
+        }).where({ ID: row.ID, version: Number(row.version) }));
+      }
+    }
+    for (const row of existing.filter((candidate) => candidate.status === 'OPEN' && !currentCodes.has(candidate.code))) {
+      await tx.run(UPDATE(entities.WorkflowExceptions).set({
+        status: 'RESOLVED', resolution: 'Resolved by corrected composition data.', resolvedBy: actor(req), resolvedAt: new Date().toISOString(), version: Number(row.version) + 1
+      }).where({ ID: row.ID, version: Number(row.version) }));
+    }
+    await tx.run(UPDATE(entities.PartProfiles).set({ completenessPct: assessment.completenessPct }).where({ ID: profile.ID }));
+    return assessment;
   }
 
   async #requiredApprovalRole(tx, entities, req, objectType) {

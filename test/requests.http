@@ -12,8 +12,53 @@ Content-Type: application/json
 ### Price changes
 GET {{base}}/odata/v4/rmc/PriceChangeRequests?$expand=supplier,grade
 
+### Pricing Workbench golden summary
+POST {{base}}/odata/v4/rmc/getPricingWorkbench
+Content-Type: application/json
+
+{
+  "priceChangeID": "72000000-0000-4000-8000-000000000001"
+}
+
+### Valid contract search for the seeded supplier and part
+POST {{base}}/odata/v4/rmc/searchValidContractItems
+Content-Type: application/json
+
+{
+  "supplierID": "11111111-1111-4111-8111-111111111111",
+  "materialID": "20000000-0000-4000-8000-000000000001",
+  "plant": "1000",
+  "businessDate": "2026-10-28"
+}
+
+### Effective BOM hierarchy for the seeded part
+POST {{base}}/odata/v4/rmc/getBomHierarchy
+Content-Type: application/json
+
+{
+  "materialID": "20000000-0000-4000-8000-000000000001",
+  "plant": "1000",
+  "keyDate": "2026-10-28"
+}
+
+### Governed vendor-part linkages
+GET {{base}}/odata/v4/rmc/VendorPartLinkages?$expand=supplier,material,contractItem($expand=contract)
+
+### Composition profiles and workflow findings
+GET {{base}}/odata/v4/rmc/PartProfiles?$expand=material,supplier,contractItem,bomHeader
+
+### Workflow findings
+GET {{base}}/odata/v4/rmc/WorkflowExceptions?$orderby=createdAt desc
+
+### Price reconciliation evidence
+GET {{base}}/odata/v4/rmc/ReconciliationRecords?$orderby=createdAt desc
+
 ### Calculation runs
 GET {{base}}/odata/v4/rmc/CalculationRuns?$expand=priceChange
 
 ### Admin settings
 GET {{base}}/odata/v4/admin/AppSettings
+
+### Mutating workflows
+# Use the SAPUI5 demo for version-aware mutations. Actions require expectedVersion
+# and the applicable Buyer, RM Admin, Approver, Finance or Auditor persona.

@@ -43,6 +43,18 @@ aspect Versioned {
   version : Integer not null default 1;
 }
 
+@assert.unique.commodityCode: [code]
+entity Commodities : cuid, managed, Versioned {
+  code                 : String(20) not null;
+  name                 : String(100) not null;
+  description          : String(500);
+  validFrom             : Date not null;
+  validTo               : Date;
+  status                : LifecycleStatus default #ACTIVE;
+  markedForDeletion     : Boolean default false;
+  owner                 : String(100);
+}
+
 @assert.unique.code: [code]
 entity Suppliers : cuid, managed, Versioned {
   code                 : String(20) not null;
@@ -95,11 +107,17 @@ entity ContractItems : cuid, managed, Versioned {
 entity RawMaterialTypes : cuid, managed, Versioned {
   code                 : String(20) not null;
   name                 : String(100) not null;
+  commodity            : Association to Commodities;
   commodityCategory    : String(40);
   defaultPriceUoM      : String(3) not null;
   defaultCurrency      : String(3) not null;
   owner                : String(80);
+  validFrom             : Date not null default '2000-01-01';
+  validTo               : Date;
   status               : LifecycleStatus default #ACTIVE;
+  markedForDeletion    : Boolean default false;
+  approvedAt           : Timestamp;
+  approvedBy           : String(100);
 }
 
 @assert.unique.gradeCode: [rawMaterialType, code]
@@ -111,7 +129,51 @@ entity RawMaterialGrades : cuid, managed, Versioned {
   purityPct            : Decimal(9,6);
   defaultYieldFactor   : Decimal(12,9) default 1;
   priceIndexCode       : String(30);
+  validFrom             : Date not null default '2000-01-01';
+  validTo               : Date;
   status               : LifecycleStatus default #ACTIVE;
+  markedForDeletion    : Boolean default false;
+  approvedAt           : Timestamp;
+  approvedBy           : String(100);
+}
+
+@assert.unique.subGradeCode: [grade, code]
+entity RawMaterialSubGrades : cuid, managed, Versioned {
+  grade                 : Association to RawMaterialGrades not null;
+  code                  : String(30) not null;
+  name                  : String(100) not null;
+  specification         : LargeString;
+  classification        : String(40);
+  validFrom             : Date not null;
+  validTo               : Date;
+  status                : LifecycleStatus default #ACTIVE;
+  markedForDeletion     : Boolean default false;
+  approvedAt            : Timestamp;
+  approvedBy            : String(100);
+}
+
+entity RawMaterialMasterRequests : cuid, managed, Versioned {
+  requestNumber         : String(30) not null;
+  requestType           : String(30) not null;
+  proposedCode          : String(30) not null;
+  proposedName          : String(100) not null;
+  commodity             : Association to Commodities;
+  rawMaterialType       : Association to RawMaterialTypes;
+  grade                 : Association to RawMaterialGrades;
+  defaultPriceUoM       : String(3);
+  defaultCurrency       : String(3);
+  specification         : LargeString;
+  classification        : String(40);
+  validFrom             : Date not null;
+  validTo               : Date;
+  reason                : String(500) not null;
+  status                : RequestStatus default #DRAFT;
+  requestedBy           : String(100);
+  submittedAt           : Timestamp;
+  decidedBy             : String(100);
+  decidedAt             : Timestamp;
+  decisionComment       : String(500);
+  createdObjectID       : UUID;
 }
 
 entity BomHeaders : cuid, managed, Versioned {
@@ -142,17 +204,26 @@ entity BomItems : cuid, managed, Versioned {
 }
 
 entity PartProfiles : cuid, managed, Versioned {
+  linkage              : Association to VendorPartLinkages;
   material             : Association to Materials not null;
   supplier             : Association to Suppliers;
   contractItem         : Association to ContractItems;
   bomHeader            : Association to BomHeaders;
   validFrom             : Date not null;
   validTo               : Date;
+  revisionLevel         : String(20) not null default '01';
+  bomExplodedAt         : Timestamp;
+  maxBomDepth           : Integer default 1;
+  contractExceptionRequired : Boolean default false;
+  contractExceptionStatus   : String(30) default 'NOT_REQUIRED';
+  contractAllocatedAt   : Timestamp;
   status               : RequestStatus default #DRAFT;
   completenessPct      : Decimal(5,2) default 0;
   totalRmContent       : Decimal(23,9) default 0;
   normalizedUoM        : String(3);
   snapshotHash         : String(64);
+  submittedAt          : Timestamp;
+  submittedBy          : String(100);
   approvedAt           : Timestamp;
   approvedBy           : String(100);
 }
@@ -161,9 +232,17 @@ entity PartConstituents : cuid, managed, Versioned {
   profile              : Association to PartProfiles not null;
   bomItem              : Association to BomItems;
   grade                : Association to RawMaterialGrades not null;
+  subGrade             : Association to RawMaterialSubGrades;
+  parentMaterial       : Association to Materials;
+  hierarchyDepth       : Integer default 0;
+  lineagePath          : String(500);
+  leafPart             : Boolean default true;
   contentQuantity      : Decimal(23,9) not null;
   contentUoM           : String(3) not null;
   contentPct           : Decimal(9,6);
+  inputWeight          : Decimal(23,9);
+  outputWeight         : Decimal(23,9);
+  scrapWeight          : Decimal(23,9) default 0;
   yieldFactor          : Decimal(12,9) default 1;
   scrapFactor          : Decimal(12,9) default 1;
   source               : String(20) default 'BOM';
@@ -173,6 +252,7 @@ entity PartConstituents : cuid, managed, Versioned {
 entity VendorPrices : cuid, managed, Versioned {
   supplier             : Association to Suppliers not null;
   grade                : Association to RawMaterialGrades not null;
+  subGrade             : Association to RawMaterialSubGrades;
   purchasingOrg        : String(8);
   plant                : String(4);
   price                : Decimal(23,6) not null;
@@ -203,6 +283,7 @@ entity PriceChangeRequests : cuid, managed, Versioned {
   requestNumber        : String(30) not null;
   supplier             : Association to Suppliers not null;
   grade                : Association to RawMaterialGrades not null;
+  subGrade             : Association to RawMaterialSubGrades;
   ruleTemplate         : Association to PriceRuleTemplates;
   purchasingOrg        : String(8);
   plant                : String(4);
@@ -218,11 +299,39 @@ entity PriceChangeRequests : cuid, managed, Versioned {
   sourceReference      : String(200);
   reason               : String(500) not null;
   status               : RequestStatus default #DRAFT;
+  priceDocumentMode    : String(30) default 'AMENDMENT';
+  priceDocumentStatus  : String(30) default 'BLOCKED';
+  releasedAt           : Timestamp;
+  releasedBy           : String(100);
+  documentDecidedAt    : Timestamp;
+  documentDecidedBy    : String(100);
+  documentDecisionComment : String(500);
   submittedAt          : Timestamp;
   submittedBy          : String(100);
   decidedAt            : Timestamp;
   decidedBy            : String(100);
   decisionComment      : String(500);
+}
+
+@assert.unique.vendorPartValidity: [supplier, material, plant, revisionLevel, validFrom]
+entity VendorPartLinkages : cuid, managed, Versioned {
+  supplier             : Association to Suppliers not null;
+  material             : Association to Materials not null;
+  plant                : String(4) not null;
+  purchasingOrg        : String(8);
+  contractItem         : Association to ContractItems;
+  revisionLevel        : String(20) not null;
+  validFrom             : Date not null;
+  validTo               : Date;
+  status                : RequestStatus default #DRAFT;
+  contractStatus       : String(30) default 'PENDING_ALLOCATION';
+  missingContractReason : String(500);
+  exceptionApprovalStatus : String(30) default 'NOT_REQUIRED';
+  exceptionApprovedBy  : String(100);
+  exceptionApprovedAt  : Timestamp;
+  contractAllocatedBy  : String(100);
+  contractAllocatedAt  : Timestamp;
+  createdByPersona     : String(30) default 'BUYER';
 }
 
 entity ApprovalRecords : cuid, managed {
@@ -235,6 +344,32 @@ entity ApprovalRecords : cuid, managed {
   actorRole            : String(50);
   comment              : String(500);
   decidedAt            : Timestamp not null;
+}
+
+entity WorkflowExceptions : cuid, managed, Versioned {
+  objectType           : String(30) not null;
+  objectID             : UUID not null;
+  code                 : String(40) not null;
+  severity             : String(10) not null default 'ERROR';
+  mandatory            : Boolean default true;
+  status               : String(20) not null default 'OPEN';
+  message              : String(1000) not null;
+  resolution           : String(1000);
+  resolvedBy           : String(100);
+  resolvedAt           : Timestamp;
+}
+
+entity ReconciliationRecords : cuid, managed, Versioned {
+  objectType           : String(30) not null;
+  objectID             : UUID not null;
+  expectedAmount       : Decimal(23,6) not null;
+  actualAmount         : Decimal(23,6) not null;
+  differenceAmount     : Decimal(23,6) not null;
+  currency             : String(3) not null;
+  status               : String(20) not null;
+  explanation          : String(1000);
+  reconciledBy         : String(100) not null;
+  reconciledAt         : Timestamp not null;
 }
 
 entity GoodsReceipts : cuid, managed, Versioned {
@@ -260,6 +395,8 @@ entity GoodsReceipts : cuid, managed, Versioned {
 
 entity CalculationRuns : cuid, managed, Versioned {
   runNumber            : String(30) not null;
+  rerunOf              : Association to CalculationRuns;
+  rerunReason          : String(500);
   priceChange          : Association to PriceChangeRequests not null;
   periodFrom           : Date not null;
   periodTo             : Date not null;
@@ -300,7 +437,8 @@ entity CalculationLines : cuid, managed {
 
 entity ContractPriceProposals : cuid, managed, Versioned {
   proposalNumber       : String(30) not null;
-  run                  : Association to CalculationRuns not null;
+  run                  : Association to CalculationRuns;
+  priceChange          : Association to PriceChangeRequests;
   contractItem         : Association to ContractItems not null;
   oldPrice             : Decimal(23,6) not null;
   proposedPrice        : Decimal(23,6) not null;

@@ -1,0 +1,2 @@
+ID;requestNumber;requestType;proposedCode;proposedName;commodity_ID;rawMaterialType_ID;grade_ID;defaultPriceUoM;defaultCurrency;specification;classification;validFrom;validTo;reason;status;requestedBy;submittedAt;version
+44000000-0000-4000-8000-000000000001;RMR-2026-0001;SUBGRADE;HRC-AUTO-B;HRC Automotive B;;;41000000-0000-4000-8000-000000000001;;;Requested automotive steel subgrade;PRIME;2026-11-01;2027-12-31;Required for a new supplier part composition;SUBMITTED;demo.buyer;2026-10-26T10:00:00Z;1

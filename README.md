@@ -6,9 +6,13 @@ The binding project rules are in [PROJECT_GUIDELINES.md](PROJECT_GUIDELINES.md).
 
 For a complete project handover, document map, new-laptop setup, and a copy-ready Codex continuation prompt, see [docs/HANDOVER.md](docs/HANDOVER.md).
 
+For the pending human walkthrough and sign-off evidence, use [docs/ACCEPTANCE_REVIEW_CHECKLIST.md](docs/ACCEPTANCE_REVIEW_CHECKLIST.md).
+
 ## What is implemented
 
 - Synthetic suppliers, contracts, parts, BOMs, GRs, RM types/grades and vendor prices
+- Persona-led commodity and RM type/grade/subgrade governance with Buyer request and RM Admin approval
+- Revisioned vendor-part-contract linkage and leaf-level composition weights
 - Part raw-material profiles and constituent traceability
 - Vendor commodity price-change workflow
 - Optimistic concurrency and approval audit records
@@ -19,8 +23,13 @@ For a complete project handover, document map, new-laptop setup, and a copy-read
 - Approval of completed calculations
 - Idempotent MRNB-equivalent posting simulation
 - Contract-price proposal generation
+- Enriched retrospective-pricing workbench with commercial header, component cost sheet, impact equation, journey and workflow visualizations
+- Blocked price-document release for simulation-only or amendment approval, plus impacted-part reporting
 - SAPUI5 control-tower, worklists and administration UI
 - Health endpoint and Cloud Foundry trial manifest
+- Executable Buyer linkage, valid-contract/no-contract exception and later-allocation workflow
+- Recursive BOM hierarchy, revisioned leaf composition approval, workflow findings and reconciliation evidence
+- Lineage-linked trial calculation reruns and idempotent simulated-posting reversals
 
 ## Trial limitations
 

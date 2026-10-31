@@ -21,6 +21,21 @@ class DemoPostingAdapter {
       message: `Demo simulation by ${user}; no S/4HANA call was made.`
     };
   }
+
+  async reverseSimulation({ posting, user, reason }) {
+    return {
+      idempotencyKey: stableHash({ type: 'RMC_REVALUATION_REVERSAL', posting: posting.ID }),
+      requestHash: stableHash({ posting: posting.ID, requestHash: posting.requestHash, reason }),
+      postingType: 'MRNB_EQUIVALENT_DEMO_REVERSAL',
+      status: 'REVERSED',
+      simulated: true,
+      sapDocument: `REV-${posting.sapDocument || posting.ID}`.slice(0, 30),
+      sapFiscalYear: posting.sapFiscalYear,
+      postedAt: new Date().toISOString(),
+      message: `Demo reversal by ${user}: ${reason}. No S/4HANA call was made.`,
+      reversalOf: posting.ID
+    };
+  }
 }
 
 module.exports = { DemoPostingAdapter, stableHash };

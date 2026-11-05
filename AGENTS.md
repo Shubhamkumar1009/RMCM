@@ -27,36 +27,64 @@ The trial-first SAP CAP vertical slice works end to end with synthetic data. It 
 
 An enriched retrospective Pricing Workbench is now implemented from the approved first 38 pages of the local reference PDF. It adds a seven-stage journey, canonical header/control fields, a server-calculated component cost sheet, comparison visualization, impact equation, and workflow/execution timeline. Confirmed persona ownership and functional rules are in `docs/PERSONAS_AND_FUNCTIONAL_SCOPE.md`; the reference mapping is in `docs/PRICING_WORKBENCH_DESIGN.md`.
 
+On 2026-11-01 the complete 58-page reference PDF was re-audited with a strict pages 1-38 boundary: every scoped page was text-extracted, rendered and visually reviewed, while pages 39-58 were not inspected or used. `docs/REFERENCE_SCOPE_AUDIT.md` records the page-group mapping, delivered coverage, intentional follow-ons and current product position.
+
 The trial now executes all confirmed persona journeys: Commodity Admin maintenance; Buyer RM-master request; RM Admin activation; Buyer vendor-part linkage and contract search; missing-contract approval and later allocation; recursive BOM hierarchy and leaf mapping; revisioned composition approval; subgrade-aware revised prices; impacted-part reporting; blocked price-document release/approval; workflow finding resolution/exclusion; and price reconciliation. Calculation Bucket/Run remains explicitly deferred because downstream debit/provision automation already exists.
 
-The five-item persona backlog and remaining technical Trial Gate T1 reversal/rerun evidence are complete in code and live HTTP verification. The final fresh-process workflow smoke passed after authorization/read-only/advisory changes. The next step is user visual review of the new screens and recording feedback/acceptance decisions; automated local Edge capture produced no inspectable screenshot. BTP deployment remains deferred until explicitly requested.
+The five-item persona backlog and remaining technical Trial Gate T1 reversal/rerun evidence are complete in code and live HTTP verification. The Overview is now an animated executive dashboard with a verified price bridge, retrospective-impact equation, readiness bars, RM contribution comparison and seven-stage journey. Values are derived from the server-calculated workbench and governed workflow state; the browser is not a financial calculation authority. Motion is restrained and disabled by `prefers-reduced-motion`.
+
+The legacy RMCM application was fully audited on 2026-11-01 from the three user manuals, screen-wise field workbook and two reported-issue files explicitly placed in scope. All 190 unique embedded manual images and all nine issue slides were visually inspected. `docs/LEGACY_RMCM_PARITY_AUDIT.md` records capability/field parity, 30 issue-to-control mappings, deliberate improvements and the honest remaining backlog.
+
+The trial now also supports governed absolute/delta price creation with three amendment dates, sequential two-level price approval with immutable step/role evidence, legacy-critical VPL and engineering/commercial attributes, duplicate source/calculation-line prevention, and a Controls & Audit UI. Disputed legacy financial formulas remain inactive pending signed Finance rules.
+
+Browser review now covers 26 key states at both 1440×900 and 1366×768, including the corrected shell, aligned contribution bars, three analytics views and expanded/collapsed navigation. It confirms the modern shell, governed forms, audit evidence and four persona workspaces with no page errors, dark-surface findings or global/table overflow. The next step is human persona/legacy-parity review and recorded Product Owner, Purchasing and Finance decisions. BTP deployment remains deferred until explicitly requested.
+
+While authentication remains dummy, the application now has a top-right trial-only persona selector for Buyer, RM Admin, Commodity Admin, Approver and All personas. It filters visible tabs, maker/decision forms and actions and returns to the selected persona’s default workspace. It is not an authorization control; CAP annotations and future IAS/XSUAA organizational enforcement remain authoritative. Responsive/contrast hardening adds explicit light foregrounds on dark surfaces and bounded internal table overflow.
+
+The user-supplied `artefacts/RMCM Design POC/RMCM.html` was reviewed on 2026-11-01 strictly for design language and non-AI interaction patterns. No reference data or AI/HANA/feed/vendor-portal/posting assumption was adopted. The application now uses a compact graphite shell, collapsible persona-aware left navigation, workspace context header, neutral Fiori-like canvas and denser operational surfaces. The adoption boundary is recorded in `docs/DESIGN_REFERENCE_ADOPTION.md`; the reference returns to excluded artefact status.
+
+The latest UI increment fixes the upper-left menu/logo collision and RM-mark contrast, aligns all Current/Proposed contribution bars, and adds a dedicated persona-visible Analytics Dashboard. It contains four KPIs, 12-month price/index movement, workflow mix, six-supplier exposure, six-commodity benchmarking and eight-month impact history. Those series are explicitly synthetic UX-review data; server-owned workbench results remain authoritative.
+
+The application has now received a complete professional enterprise UI revamp. The shell uses native 3rem SAPUI5 header geometry to eliminate rail overlap, a simplified brand/persona layout, compact executive KPI cards, a restrained navy/blue hierarchy, consistent low-elevation work surfaces and standardized typography across every module. No workflow, authorization or server-calculation behavior changed.
+
+A 44-slide editable business presentation and role-based user handbook is available at `docs/RMC_Application_Business_Handbook.pptx`. It uses the application blue-purple theme and covers the executive value story, verified trial metrics, before/after operating model, persona-capability matrix, end-to-end process, every available persona journey, financial value bridges, calculation and control behavior, demo scenario, data lineage, architecture, transition gates, success measures and open decisions. Regenerate it with `scripts/generate-rmc-handbook.js` after making material scope changes.
+
+A separate 24-slide leadership architecture sign-off deck is available at `docs/RMC_Technical_Architecture_Leadership_Signoff.pptx`. It presents the current trial, proposed BTP/S/4 target, BTP service allow-list, deployment topology, integration and clean-core boundaries, data ownership, identity/SoD, connectivity options, scale, resilience, operations, cost governance, gates, risks, open decisions and a formal approval record. It deliberately preserves the no-HANA-Cloud baseline and labels Connectivity and other services as conditional. Regenerate it with `scripts/generate-technical-architecture-deck.js`.
 
 Do not start productive S/4 integration. `PROJECT_GUIDELINES.md` prohibits real S/4 connectivity or real business data before formal Gate T3 approval.
 
 ## Last five interactions
 
-1. **Committed and pushed the active laptop/agent handover baseline.** `origin/main` contains the application, verified evidence, transfer guide, continuation prompt and prioritized unfinished tasks through Gate T3.
-2. **Completed Trial Gate T1 rerun/reversal evidence.** A new lineage-linked rerun reproduced INR 4,200, while simulated posting reversal retained immutable evidence and returned the same record on replay.
-3. **Completed the final fresh-process workflow smoke.** Authorization gates, read-only projections, advisory exclusion, composition approval and matched price reconciliation passed together.
-4. **Completed the remaining persona backlog.** Buyer linkage/contract search, no-contract approval/later allocation, recursive BOM leaf mapping, revisioned composition approval, findings, reconciliation and expanded authorization were implemented.
-5. **Implemented Commodity Admin maintenance and theme contrast.** Governed commodity actions work end to end, and dark UI surfaces use explicit light foreground colors.
+1. **Rebuilt the application visual system.** Replaced prototype-like styling with restrained enterprise navy/blue hierarchy, neutral canvas, consistent typography and low-elevation surfaces.
+2. **Reworked the shell and Overview.** Fixed overlap through native header geometry, simplified brand/persona chrome and replaced generic tiles with compact executive KPIs.
+3. **Standardized every module.** Applied consistent cards, forms, tables, section headers and decision surfaces across all eight navigation areas.
+4. **Completed two-resolution visual review.** Captured 26 states at both 1440×900 and 1366×768, including expanded/collapsed navigation and all personas.
+5. **Verified the revamp.** 20/20 tests, production build, XML/JavaScript parsing and production audit pass; both browser reports have no page, contrast or overflow findings.
 
 ## Handover baseline contents
 
-The committed and pushed handover baseline includes:
+The current workspace handover set includes the committed application baseline plus the newer uncommitted presentation/continuity files listed by `git status`:
 
 - `package-lock.json` - compatible dependency/security refresh.
 - `.gitattributes` - cross-laptop LF normalization for source, data and documentation files.
-- `app/rmc/webapp/view/App.view.xml` - themed dashboard hero and UI classes.
-- `app/rmc/webapp/css/style.css` - purple-and-blue visual theme with explicit light foregrounds on dark surfaces.
-- `app/rmc/webapp/Component.js` and `app/rmc/webapp/controller/App.controller.js` - workbench and persona-workflow state, loading and actions.
+- `.gitignore` - local/runtime exclusions including transient Microsoft Office PowerPoint lock files.
+- `app/rmc/webapp/view/App.view.xml` - professional executive and analytics dashboards, native-height shell, workbench and persona UI.
+- `app/rmc/webapp/css/style.css` - enterprise navy/blue design system, corrected shell/bar geometry, consistent operational surfaces, responsive layout and dark-surface accessibility.
+- `app/rmc/webapp/Component.js` and `app/rmc/webapp/controller/App.controller.js` - workbench/persona state, server-backed Overview visuals and labelled synthetic analytics presentation models.
 - `srv/rmc-service.cds` and `srv/rmc-service.js` - governed master, linkage, composition, findings, pricing and reconciliation actions.
 - `srv/lib/pricing-workbench.js` and `test/pricing-workbench.test.js` - deterministic workbench calculation and golden test.
 - `srv/lib/commodity-master.js` and `test/commodity-master.test.js` - Commodity Admin validation, lifecycle rules and unit tests.
 - `srv/lib/workflow-domain.js`, `test/workflow-domain.test.js`, and `test/authorization-contract.test.js` - BOM, composition, scope and persona-gate coverage.
 - `srv/lib/demo-posting-adapter.js` and `test/posting-adapter.test.js` - idempotent trial posting and reversal evidence.
-- `docs/HANDOVER.md`, `docs/ACCEPTANCE_REVIEW_CHECKLIST.md`, `docs/PRICING_WORKBENCH_DESIGN.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/ARCHITECTURE.md`, and `README.md` - active transfer, acceptance, design and status documentation.
+- `docs/HANDOVER.md`, `docs/ACCEPTANCE_REVIEW_CHECKLIST.md`, `docs/PRICING_WORKBENCH_DESIGN.md`, `docs/REFERENCE_SCOPE_AUDIT.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/ARCHITECTURE.md`, and `README.md` - active transfer, acceptance, reference-coverage, design and status documentation.
+- `docs/RMC_Application_Business_Handbook.pptx` and `scripts/generate-rmc-handbook.js` - editable 44-slide business presentation/user handbook and its repeatable generator.
+- `docs/RMC_Technical_Architecture_Leadership_Signoff.pptx` and `scripts/generate-technical-architecture-deck.js` - editable 24-slide BTP/S/4 architecture decision and leadership sign-off deck plus generator.
+- `docs/VISUAL_REVIEW_REPORT.md`, `docs/review-evidence/` and `scripts/capture-ui-review.js` - browser-based UI review findings, before/after screenshots, machine-readable evidence and repeatable capture script.
 - `docs/PERSONAS_AND_FUNCTIONAL_SCOPE.md` - confirmed personas, field rules, process/state visualizations and acceptance priorities.
+- `docs/LEGACY_RMCM_PARITY_AUDIT.md` - complete legacy capability, field and reported-issue reconciliation with remaining decisions.
+- `docs/DESIGN_REFERENCE_ADOPTION.md` - strict visual/interaction adoption boundary for the user-supplied HTML proof of concept.
+- `test/legacy-parity-contract.test.js` - canonical legacy-critical field and duplicate-control contract tests.
+- `test/persona-ui-contract.test.js` - persona selector and maker/approver UI-separation contract tests.
 - `db/schema.cds`, governed master/linkage seed CSVs, and `xs-security.json` - persona-aware hierarchy, linkage, composition and price-document model.
 - `AGENTS.md` - this continuity record.
 
@@ -64,8 +92,8 @@ The working tree should be clean after cloning or pulling `origin/main`. Re-chec
 
 ## Last verified baseline
 
-- Verified locally on 2026-10-31 after completing the persona backlog and Trial Gate T1 rerun/reversal evidence.
-- `npm.cmd test`: 14/14 tests passed.
+- Verified locally on 2026-11-01 after the strict reference re-audit and visual enrichment.
+- `npm.cmd test`: 20/20 tests passed.
 - `npm.cmd run build`: production CAP build passed.
 - `npm.cmd audit --omit=dev`: zero production vulnerabilities.
 - App, health endpoint, OData metadata, and four Pricing Workbench query actions: HTTP 200.
@@ -74,7 +102,10 @@ The working tree should be clean after cloning or pulling `origin/main`. Re-chec
 - Live linkage/exception/allocation/BOM/composition workflow and approved price reconciliation smoke tests passed on an isolated port 4005 instance.
 - Final fresh-process smoke passed after persona-role annotations, read-only workflow projections and advisory-exception handling: excluded advisory remained excluded, direct linkage write returned HTTP 405, and reconciliation matched INR 2,265.
 - Trial Gate T1 rerun/reversal smoke passed: original and rerun both produced 280 eligible units and INR 4,200; reversal replay returned the original reversal record.
-- Automated DOM/screenshot capture with local Edge returned no output, so the new UI still needs user visual review. The isolated port 4005 process was stopped; the user's port 4004 process was not touched and must be restarted to load current code.
+- Playwright with local Microsoft Edge captured the professional 26-state route at 1440×900 and 1366×768. Evidence includes the native-height shell, executive KPIs, aligned contribution bars, analytics module, operational screens, collapsed navigation and all four persona workspaces; reports show no page errors, dark-surface contrast findings or global/table horizontal overflow. Human persona acceptance remains pending.
+- The enriched business handbook passed native and package validation: PowerPoint opened and exported all 44 slides; the package contains 44 notes pages, 431 embedded vector visual assets, no negative shape extents and zero malformed XML parts.
+- The technical architecture sign-off deck passed native and package validation: PowerPoint opened all 24 slides; the package contains 24 notes pages, zero malformed XML parts and no negative shape extents. Leadership approval remains pending.
+- After the analytics/shell increment, `npm.cmd test` passed 20/20, the production build passed, `npm.cmd audit --omit=dev` found zero vulnerabilities and UI XML/JavaScript parsing passed.
 - Runtime remains `@sap/cds` 10.1.1; the compatible development kit resolved to 10.2.0 in the lockfile.
 
 ## Continuity maintenance
@@ -85,3 +116,5 @@ After each substantive development interaction, update this file before finishin
 - Update **Current continuation point**, **Handover baseline contents**, and **Last verified baseline** when they change.
 - Record decisions and verified facts, not speculative plans.
 - Keep this refresher concise; detailed requirements remain in the binding documents.
+
+The user requires continuous handover maintenance. After every substantive change of any kind, always update `docs/HANDOVER.md` and the copy-ready continuation prompt in `FIRST_PROMPT.md` in the same interaction. The user must not need to repeat this instruction. Keep both files accurate about completed work, validation, uncommitted changes, continuation point and next actions.

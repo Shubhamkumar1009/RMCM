@@ -10,3 +10,4 @@ default-env.json
 .vscode/settings.json
 coverage/
 dist/
+~$*.pptx

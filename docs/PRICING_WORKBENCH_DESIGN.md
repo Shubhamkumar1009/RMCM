@@ -160,4 +160,6 @@ Scrap settlement, adjustment percentages, taxes, freight, FX, price-unit convers
 
 ## Delivery boundary
 
-The current implementation is a synthetic trial workbench. The first increment calculates the cost sheet from existing approved profiles, constituents, vendor prices, contract prices, movement rules, and GRs. Scrap price, operation cost, cost-bucket masters, multi-level BOM explosion, attachments, multi-step approval, exception resolution, real posting, and S/4 contract update remain controlled follow-on increments.
+The current implementation is a synthetic trial workbench. It now executes the confirmed persona journeys for master requests, commodity maintenance, vendor-part linkage, contract exception/allocation, recursive BOM explosion, leaf mapping, revisioned composition, exception resolution/exclusion, revised prices, impacted parts, cost sheet, blocked/simulation/amendment release, approval and reconciliation.
+
+The detailed coverage re-audit is recorded in `docs/REFERENCE_SCOPE_AUDIT.md`. Controlled follow-on decisions include governed scrap/operation/other cost-element masters, advanced index/FX pricing rules, attachments, GR-line drill-down, bulk maintenance, delegation/multi-level thresholds, historical trends, real posting and S/4 contract update. Pages beyond 38 remain outside scope.

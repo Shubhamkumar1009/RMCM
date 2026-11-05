@@ -3,51 +3,281 @@
   xmlns:mvc="sap.ui.core.mvc"
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
+  xmlns:tnt="sap.tnt"
   xmlns:f="sap.f">
   <App busy="{app>/busy}">
     <Page showHeader="true" class="rmcPage rmcTheme">
       <customHeader>
         <OverflowToolbar class="rmcHeader">
-          <Title text="Raw Material Content Management" level="H2" />
+          <Button icon="sap-icon://menu2" type="Transparent" tooltip="Expand or collapse navigation" press=".onToggleSideNavigation" class="rmcShellButton" />
+          <HBox alignItems="Center" class="rmcBrandLockup">
+            <Avatar initials="RM" displayShape="Square" displaySize="XS" class="rmcShellLogo" />
+            <Title text="Raw Material Content Management" level="H2" />
+          </HBox>
           <ToolbarSpacer />
+          <Label text="View as" labelFor="personaSelect" class="rmcPersonaLabel" />
+          <Select id="personaSelect" selectedKey="{app>/selectedPersona}" items="{app>/personaOptions}" change=".onPersonaChange" width="13rem" class="rmcPersonaSelect">
+            <core:Item key="{app>key}" text="{app>text}" />
+          </Select>
           <ObjectStatus text="DEMO — NOT CONNECTED TO S/4HANA" state="Warning" icon="sap-icon://message-warning" />
-          <Button icon="sap-icon://refresh" tooltip="Refresh all" press=".onRefresh" />
+          <Button icon="sap-icon://refresh" type="Transparent" tooltip="Refresh all" press=".onRefresh" class="rmcRefreshButton" />
         </OverflowToolbar>
       </customHeader>
       <content>
-        <IconTabBar id="mainTabs" expandable="false" class="sapUiResponsiveContentPadding rmcTabBar">
+        <HBox class="rmcAppBody" alignItems="Stretch">
+          <tnt:SideNavigation id="sideNavigation" expanded="{app>/navigationExpanded}" selectedKey="{app>/selectedNavigationKey}" itemSelect=".onNavigationSelect" class="rmcSideNavigation">
+            <tnt:item>
+              <tnt:NavigationList>
+                <tnt:NavigationListItem key="overview" text="Overview" icon="sap-icon://home" />
+                <tnt:NavigationListItem key="analytics" text="Analytics Dashboard" icon="sap-icon://business-objects-experience" visible="{app>/persona/showAnalytics}" />
+                <tnt:NavigationListItem key="masterData" text="Master Data" icon="sap-icon://database" visible="{app>/persona/showMasterData}" />
+                <tnt:NavigationListItem key="prices" text="Commodity Prices" icon="sap-icon://line-chart" visible="{app>/persona/showPrices}" />
+                <tnt:NavigationListItem key="workbench" text="Pricing Workbench" icon="sap-icon://table-chart" visible="{app>/persona/showWorkbench}" />
+                <tnt:NavigationListItem key="content" text="Part RM Content" icon="sap-icon://product" visible="{app>/persona/showPartContent}" />
+              </tnt:NavigationList>
+            </tnt:item>
+            <tnt:fixedItem>
+              <tnt:NavigationList>
+                <tnt:NavigationListItem key="governance" text="Controls &amp; Audit" icon="sap-icon://shield" visible="{app>/persona/showGovernance}" />
+                <tnt:NavigationListItem key="admin" text="Administration" icon="sap-icon://action-settings" visible="{app>/persona/showAdmin}" />
+              </tnt:NavigationList>
+            </tnt:fixedItem>
+          </tnt:SideNavigation>
+          <VBox class="rmcMainArea">
+            <HBox class="rmcWorkspaceHeader" justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap">
+              <VBox>
+                <HBox alignItems="Center" class="rmcWorkspaceBreadcrumb"><core:Icon src="sap-icon://home" /><Text text="RMC" /><Text text="/" /><Text text="{app>/persona/label}" /></HBox>
+                <Title text="{app>/persona/label} workspace" level="H2" />
+                <Text text="{app>/persona/description}" class="rmcWorkspaceDescription" />
+              </VBox>
+              <HBox alignItems="Center" class="rmcWorkspaceMeta">
+                <ObjectStatus text="Synthetic data" icon="sap-icon://database" state="Information" />
+                <ObjectStatus text="Role preview" icon="sap-icon://locked" state="Warning" />
+              </HBox>
+            </HBox>
+        <IconTabBar id="mainTabs" selectedKey="{app>/selectedNavigationKey}" expandable="false" class="sapUiResponsiveContentPadding rmcTabBar rmcMainTabs">
           <items>
             <IconTabFilter key="overview" text="Overview" icon="sap-icon://business-objects-experience">
               <VBox class="sapUiMediumMarginTop">
-                <HBox class="rmcHero" alignItems="Center">
-                  <core:Icon src="sap-icon://business-objects-experience" size="2.75rem" class="rmcHeroIcon" />
-                  <VBox>
-                    <Title text="Month-end control tower" level="H2" class="rmcHeroTitle" />
-                    <Text text="Monitor commodity price changes, calculations, approvals and simulated postings from one place." class="rmcHeroText" />
+                <HBox class="rmcHero" alignItems="Center" justifyContent="SpaceBetween" wrap="Wrap">
+                  <HBox alignItems="Center" class="rmcHeroLead">
+                    <core:Icon src="sap-icon://business-objects-experience" size="2.25rem" class="rmcHeroIcon" />
+                    <VBox>
+                      <Text text="RMC EXECUTIVE CONTROL TOWER" class="rmcHeroEyebrow" />
+                      <Title text="Month-end pricing command center" level="H2" class="rmcHeroTitle" />
+                      <Text text="Govern price changes, exposure, approvals and downstream readiness from one trusted workspace." class="rmcHeroText" />
+                    </VBox>
+                  </HBox>
+                  <VBox class="rmcHeroSummary" alignItems="End">
+                    <ObjectStatus text="Operational view" icon="sap-icon://status-positive" state="Success" inverted="true" />
+                    <Text text="Synthetic demonstration snapshot" />
                   </VBox>
                 </HBox>
-                <FlexBox wrap="Wrap" class="rmcTiles">
-                  <GenericTile header="Draft price changes" subheader="Awaiting submission" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
-                    <TileContent><NumericContent value="{app>/dashboard/draftPriceChanges}" icon="sap-icon://edit" valueColor="Neutral" /></TileContent>
-                  </GenericTile>
-                  <GenericTile header="Pending approvals" subheader="Commercial review" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
-                    <TileContent><NumericContent value="{app>/dashboard/pendingApprovals}" icon="sap-icon://approvals" valueColor="Critical" /></TileContent>
-                  </GenericTile>
-                  <GenericTile header="Queued / running" subheader="Deferred calculation-run scope" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" visible="false">
-                    <TileContent><NumericContent value="{= ${app>/dashboard/queuedRuns} + ${app>/dashboard/runningRuns} }" icon="sap-icon://process" valueColor="Neutral" /></TileContent>
-                  </GenericTile>
-                  <GenericTile header="Approved, not posted" subheader="Deferred calculation-run scope" class="sapUiTinyMarginEnd sapUiTinyMarginBottom" visible="false">
-                    <TileContent><NumericContent value="{app>/dashboard/approvedNotPosted}" icon="sap-icon://pending" valueColor="Critical" /></TileContent>
-                  </GenericTile>
-                  <GenericTile header="Open exposure" subheader="{app>/dashboard/currency}" class="sapUiTinyMarginEnd sapUiTinyMarginBottom">
-                    <TileContent><NumericContent value="{app>/dashboard/totalExposure}" truncateValueTo="12" icon="sap-icon://money-bills" valueColor="Good" /></TileContent>
-                  </GenericTile>
+                <FlexBox wrap="Wrap" class="rmcExecutiveKpis">
+                  <VBox class="rmcExecutiveKpi rmcKpiPrimary">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center"><VBox class="rmcKpiIcon"><core:Icon src="sap-icon://edit" /></VBox><ObjectStatus text="Maker queue" state="Information" /></HBox>
+                    <ObjectNumber number="{app>/dashboard/draftPriceChanges}" />
+                    <Title text="Draft price changes" level="H5" />
+                    <Text text="Requests awaiting completion and submission" />
+                  </VBox>
+                  <VBox class="rmcExecutiveKpi rmcKpiWarning">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center"><VBox class="rmcKpiIcon"><core:Icon src="sap-icon://approvals" /></VBox><ObjectStatus text="Decision queue" state="Warning" /></HBox>
+                    <ObjectNumber number="{app>/dashboard/pendingApprovals}" state="Warning" />
+                    <Title text="Pending approvals" level="H5" />
+                    <Text text="Commercial and governance decisions due" />
+                  </VBox>
+                  <VBox class="rmcExecutiveKpi rmcKpiSuccess">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center"><VBox class="rmcKpiIcon"><core:Icon src="sap-icon://money-bills" /></VBox><ObjectStatus text="Current scope" state="Success" /></HBox>
+                    <ObjectNumber number="{app>/dashboard/totalExposure}" unit="{app>/dashboard/currency}" state="Success" />
+                    <Title text="Open exposure" level="H5" />
+                    <Text text="Estimated value currently under control" />
+                  </VBox>
+                  <VBox class="rmcExecutiveKpi rmcKpiAccent">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center"><VBox class="rmcKpiIcon"><core:Icon src="sap-icon://trend-up" /></VBox><ObjectStatus text="Verified" state="Information" /></HBox>
+                    <ObjectNumber number="{app>/dashboardVisuals/unitDelta}" unit="{app>/dashboardVisuals/currency}" />
+                    <Title text="Unit price movement" level="H5" />
+                    <Text text="Server-calculated current-to-proposed delta" />
+                  </VBox>
                 </FlexBox>
+                <FlexBox wrap="Wrap" class="rmcDashboardGrid sapUiMediumMarginTop">
+                  <VBox class="rmcDashboardCard rmcPriceChartCard">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap" class="rmcDashboardHeading">
+                      <VBox>
+                        <Text text="VERIFIED PRICE BRIDGE" class="rmcDashboardEyebrow" />
+                        <Title text="Current to proposed part price" level="H3" />
+                      </VBox>
+                      <ObjectStatus text="{= ${app>/dashboardVisuals/priceChangePct} + '% movement' }" state="Information" inverted="true" />
+                    </HBox>
+                    <VBox class="rmcChartRows">
+                      <HBox justifyContent="SpaceBetween" alignItems="Center"><Text text="Current price" /><ObjectNumber number="{app>/dashboardVisuals/currentPrice}" unit="{app>/dashboardVisuals/currency}" /></HBox>
+                      <ProgressIndicator percentValue="{app>/dashboardVisuals/currentPricePercent}" displayValue="" state="None" width="100%" class="rmcChartBar rmcChartCurrent" />
+                      <HBox justifyContent="SpaceBetween" alignItems="Center"><Text text="Proposed price" /><ObjectNumber number="{app>/dashboardVisuals/proposedPrice}" unit="{app>/dashboardVisuals/currency}" emphasized="true" /></HBox>
+                      <ProgressIndicator percentValue="{app>/dashboardVisuals/proposedPricePercent}" displayValue="" state="None" width="100%" class="rmcChartBar rmcChartProposed" />
+                    </VBox>
+                    <HBox class="rmcChartCallout" alignItems="Center">
+                      <core:Icon src="sap-icon://trend-up" />
+                      <Text text="Unit movement" />
+                      <ToolbarSpacer />
+                      <ObjectNumber number="{app>/dashboardVisuals/unitDelta}" unit="{app>/dashboardVisuals/currency}" state="Warning" emphasized="true" />
+                    </HBox>
+                  </VBox>
+                  <VBox class="rmcDashboardCard rmcImpactVisual">
+                    <Text text="RETROSPECTIVE EXPOSURE" class="rmcDashboardEyebrow" />
+                    <Title text="Impact equation" level="H3" />
+                    <Text text="A transparent view of how eligible receipts and the approved unit delta create financial exposure." wrapping="true" class="rmcImpactIntro" />
+                    <FlexBox alignItems="Center" justifyContent="Center" wrap="Wrap" class="rmcImpactEquation">
+                      <VBox class="rmcEquationTerm"><ObjectNumber number="{app>/dashboardVisuals/eligibleQuantity}" /><Text text="Eligible quantity" /></VBox>
+                      <Text text="×" class="rmcEquationOperator" />
+                      <VBox class="rmcEquationTerm"><ObjectNumber number="{app>/dashboardVisuals/unitDelta}" /><Text text="Unit delta" /></VBox>
+                      <Text text="=" class="rmcEquationOperator" />
+                      <VBox class="rmcEquationTerm rmcImpactResult"><ObjectNumber number="{app>/dashboardVisuals/estimatedImpact}" unit="{app>/dashboardVisuals/currency}" /><Text text="Estimated impact" /></VBox>
+                    </FlexBox>
+                    <HBox justifyContent="SpaceBetween" class="rmcImpactFooter"><Text text="Affected parts" /><ObjectNumber number="{app>/dashboardVisuals/affectedParts}" /></HBox>
+                  </VBox>
+                </FlexBox>
+
+                <FlexBox wrap="Wrap" class="rmcDashboardGrid rmcDashboardLower">
+                  <VBox class="rmcDashboardCard rmcHealthCard">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="rmcDashboardHeading">
+                      <VBox><Text text="CONTROL HEALTH" class="rmcDashboardEyebrow" /><Title text="Operational readiness" level="H3" /></VBox>
+                      <core:Icon src="sap-icon://activity-2" class="rmcDashboardHeadingIcon" />
+                    </HBox>
+                    <List items="{app>/dashboardVisuals/healthBars}" showSeparators="None" class="rmcHealthList">
+                      <CustomListItem>
+                        <VBox class="rmcHealthRow">
+                          <HBox justifyContent="SpaceBetween"><Text text="{app>label}" /><Text text="{app>detail}" /></HBox>
+                          <ProgressIndicator percentValue="{app>percent}" displayValue="{= ${app>percent} + '%' }" state="{app>state}" width="100%" />
+                        </VBox>
+                      </CustomListItem>
+                    </List>
+                  </VBox>
+                  <VBox class="rmcDashboardCard rmcContributionCard">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="rmcDashboardHeading">
+                      <VBox><Text text="COST COMPOSITION" class="rmcDashboardEyebrow" /><Title text="RM contribution movement" level="H3" /></VBox>
+                      <core:Icon src="sap-icon://horizontal-bar-chart" class="rmcDashboardHeadingIcon" />
+                    </HBox>
+                    <VBox items="{app>/dashboardVisuals/contributionBars}" class="rmcContributionList">
+                      <VBox class="rmcContributionRow">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center"><Text text="{app>label}" class="rmcContributionLabel" /><ObjectNumber number="{app>delta}" unit="{app>currency}" state="{= ${app>delta} > 0 ? 'Warning' : 'Success' }" /></HBox>
+                        <HBox alignItems="Center" class="rmcContributionLine">
+                          <Text text="Current" width="5rem" />
+                          <ProgressIndicator percentValue="{app>currentPercent}" displayValue="" state="None" class="rmcContributionCurrent"><layoutData><FlexItemData growFactor="1" baseSize="0%" /></layoutData></ProgressIndicator>
+                          <HBox width="5.5rem" justifyContent="End"><ObjectNumber number="{app>currentValue}" /></HBox>
+                        </HBox>
+                        <HBox alignItems="Center" class="rmcContributionLine">
+                          <Text text="Proposed" width="5rem" />
+                          <ProgressIndicator percentValue="{app>proposedPercent}" displayValue="" state="None" class="rmcContributionProposed"><layoutData><FlexItemData growFactor="1" baseSize="0%" /></layoutData></ProgressIndicator>
+                          <HBox width="5.5rem" justifyContent="End"><ObjectNumber number="{app>proposedValue}" /></HBox>
+                        </HBox>
+                      </VBox>
+                    </VBox>
+                  </VBox>
+                </FlexBox>
+
+                <VBox class="rmcDashboardCard rmcJourneyCard">
+                  <HBox justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap" class="rmcDashboardHeading">
+                    <VBox><Text text="GOVERNED PROCESS" class="rmcDashboardEyebrow" /><Title text="Seven-stage business journey" level="H3" /></VBox>
+                    <ObjectStatus text="{= ${app>/dashboardVisuals/stageCompletion} + '% ready' }" state="Information" inverted="true" />
+                  </HBox>
+                  <FlexBox items="{app>/processStages}" wrap="NoWrap" class="rmcDashboardJourney">
+                    <VBox class="rmcDashboardStage">
+                      <HBox alignItems="Center"><Text text="{app>number}" class="rmcStageNumber" /><core:Icon src="{app>icon}" /></HBox>
+                      <Title text="{app>title}" level="H5" />
+                      <ObjectStatus text="{app>detail}" state="{app>state}" />
+                    </VBox>
+                  </FlexBox>
+                </VBox>
                 <MessageStrip text="This trial deployment uses synthetic contracts, BOMs, goods receipts and prices. All SAP document numbers are simulated." type="Information" showIcon="true" class="sapUiMediumMarginTop" />
               </VBox>
             </IconTabFilter>
 
-            <IconTabFilter key="masterData" text="Master Data" icon="sap-icon://database">
+            <IconTabFilter key="analytics" text="Analytics Dashboard" icon="sap-icon://business-objects-experience" visible="{app>/persona/showAnalytics}">
+              <VBox class="sapUiMediumMarginTop rmcAnalyticsModule">
+                <HBox class="rmcAnalyticsHero" justifyContent="SpaceBetween" alignItems="Center" wrap="Wrap">
+                  <VBox>
+                    <Text text="EXECUTIVE ANALYTICS" class="rmcDashboardEyebrow" />
+                    <Title text="Raw material intelligence dashboard" level="H2" />
+                    <Text text="Synthetic trend, exposure and workflow views for design review; governed calculations remain server-owned." wrapping="true" />
+                  </VBox>
+                  <HBox class="rmcAnalyticsHeroBadge" alignItems="Center"><core:Icon src="sap-icon://line-chart" /><Text text="12-month synthetic view" /></HBox>
+                </HBox>
+
+                <FlexBox wrap="Wrap" class="rmcAnalyticsKpis sapUiMediumMarginTop">
+                  <VBox class="rmcAnalyticsKpi"><Text text="MANAGED EXPOSURE" /><ObjectNumber number="{app>/analytics/managedSpend}" unit="{app>/analytics/currency}" /><ObjectStatus text="Across 6 suppliers" state="Information" /></VBox>
+                  <VBox class="rmcAnalyticsKpi"><Text text="ANNUALIZED IMPACT" /><ObjectNumber number="{app>/analytics/annualizedImpact}" unit="{app>/analytics/currency}" state="Warning" /><ObjectStatus text="Based on current run-rate" state="Warning" /></VBox>
+                  <VBox class="rmcAnalyticsKpi"><Text text="PRICE REQUESTS" /><ObjectNumber number="{app>/analytics/requestVolume}" /><ObjectStatus text="Synthetic review volume" state="Information" /></VBox>
+                  <VBox class="rmcAnalyticsKpi"><Text text="COVERAGE" /><ObjectNumber number="{app>/analytics/trackedCommodities}" unit="commodities" /><ObjectStatus text="6 active suppliers" state="Success" /></VBox>
+                </FlexBox>
+
+                <FlexBox wrap="Wrap" class="rmcAnalyticsGrid sapUiMediumMarginTop">
+                  <VBox class="rmcAnalyticsCard rmcTrendCard">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center" class="rmcDashboardHeading">
+                      <VBox><Text text="PRICE &amp; INDEX TREND" class="rmcDashboardEyebrow" /><Title text="12-month movement" level="H3" /></VBox>
+                      <HBox class="rmcChartLegend"><Text text="Part price" class="rmcLegendPrice" /><Text text="Market index" class="rmcLegendIndex" /></HBox>
+                    </HBox>
+                    <FlexBox items="{app>/analytics/monthlyTrend}" alignItems="End" justifyContent="SpaceBetween" class="rmcColumnChart">
+                      <VBox alignItems="Center" class="rmcColumnGroup">
+                        <Text text="{app>price}" class="rmcColumnValue" />
+                        <HBox alignItems="End" justifyContent="Center" class="rmcColumnPlot">
+                          <VBox height="{app>priceHeight}" class="rmcColumn rmcColumnPrice" tooltip="Part price {app>price}" />
+                          <VBox height="{app>indexHeight}" class="rmcColumn rmcColumnIndex" tooltip="Index {app>index}" />
+                        </HBox>
+                        <Text text="{app>month}" class="rmcAxisLabel" />
+                      </VBox>
+                    </FlexBox>
+                  </VBox>
+
+                  <VBox class="rmcAnalyticsCard rmcWorkflowCard">
+                    <Text text="WORKFLOW PORTFOLIO" class="rmcDashboardEyebrow" />
+                    <Title text="Request status mix" level="H3" />
+                    <HBox alignItems="Center" justifyContent="SpaceAround" class="rmcWorkflowVisual">
+                      <VBox class="rmcDonutChart" alignItems="Center" justifyContent="Center"><ObjectNumber number="100" unit="%" /><Text text="Requests" /></VBox>
+                      <VBox items="{app>/analytics/workflowMix}" class="rmcWorkflowLegend">
+                        <HBox justifyContent="SpaceBetween" alignItems="Center"><ObjectStatus text="{app>label}" state="{app>state}" /><ObjectNumber number="{app>value}" unit="%" /></HBox>
+                      </VBox>
+                    </HBox>
+                    <MessageStrip text="Synthetic distribution for experience review" type="Information" showIcon="true" />
+                  </VBox>
+                </FlexBox>
+
+                <FlexBox wrap="Wrap" class="rmcAnalyticsGrid sapUiMediumMarginTop">
+                  <VBox class="rmcAnalyticsCard">
+                    <Text text="SUPPLIER CONCENTRATION" class="rmcDashboardEyebrow" />
+                    <Title text="Exposure by supplier" level="H3" />
+                    <VBox items="{app>/analytics/supplierExposure}" class="rmcRankedChart">
+                      <VBox class="rmcRankedRow">
+                        <HBox justifyContent="SpaceBetween"><Text text="{app>label}" /><ObjectNumber number="{app>value}" unit="{app>/analytics/currency}" /></HBox>
+                        <ProgressIndicator percentValue="{app>percent}" displayValue="" state="None" class="rmcSupplierBar" />
+                      </VBox>
+                    </VBox>
+                  </VBox>
+
+                  <VBox class="rmcAnalyticsCard">
+                    <Text text="COMMODITY BENCHMARK" class="rmcDashboardEyebrow" />
+                    <Title text="Normalized index comparison" level="H3" />
+                    <VBox items="{app>/analytics/commodityComparison}" class="rmcRankedChart">
+                      <HBox alignItems="Center" class="rmcBenchmarkRow">
+                        <Text text="{app>label}" width="6rem" />
+                        <ProgressIndicator percentValue="{app>percent}" displayValue="" state="None" class="rmcCommodityBar"><layoutData><FlexItemData growFactor="1" baseSize="0%" /></layoutData></ProgressIndicator>
+                        <ObjectNumber number="{app>index}" />
+                      </HBox>
+                    </VBox>
+                  </VBox>
+                </FlexBox>
+
+                <VBox class="rmcAnalyticsCard rmcImpactTrendCard sapUiMediumMarginTop">
+                  <HBox justifyContent="SpaceBetween" alignItems="Center" class="rmcDashboardHeading">
+                    <VBox><Text text="RETROSPECTIVE IMPACT" class="rmcDashboardEyebrow" /><Title text="Monthly exposure trend" level="H3" /></VBox>
+                    <ObjectStatus text="Latest: 4,200 INR" state="Warning" inverted="true" />
+                  </HBox>
+                  <FlexBox items="{app>/analytics/impactTrend}" alignItems="End" justifyContent="SpaceAround" class="rmcImpactColumns">
+                    <VBox alignItems="Center" class="rmcImpactColumnGroup"><Text text="{app>value}" class="rmcColumnValue" /><VBox height="{app>height}" class="rmcImpactColumn" /><Text text="{app>month}" class="rmcAxisLabel" /></VBox>
+                  </FlexBox>
+                </VBox>
+              </VBox>
+            </IconTabFilter>
+
+            <IconTabFilter key="masterData" text="Master Data" icon="sap-icon://database" visible="{app>/persona/showMasterData}">
               <VBox class="sapUiMediumMarginTop">
                 <HBox class="rmcSectionHero" alignItems="Center">
                   <core:Icon src="sap-icon://key-user-settings" size="2.5rem" />
@@ -57,14 +287,25 @@
                   </VBox>
                 </HBox>
 
-                <FlexBox wrap="Wrap" class="rmcPersonaGrid sapUiMediumMarginTop">
-                  <VBox class="rmcPersonaCard"><core:Icon src="sap-icon://shield" /><Title text="RM Admin" level="H4" /><Text text="Maintains and approves RM type, grade and subgrade masters." wrapping="true" /></VBox>
-                  <VBox class="rmcPersonaCard"><core:Icon src="sap-icon://dimension" /><Title text="Commodity Admin" level="H4" /><Text text="Maintains the acceptable commodity catalog and validity." wrapping="true" /></VBox>
-                  <VBox class="rmcPersonaCard"><core:Icon src="sap-icon://customer-financial-fact-sheet" /><Title text="Buyer" level="H4" /><Text text="Requests masters and maintains vendor-part-contract composition." wrapping="true" /></VBox>
-                  <VBox class="rmcPersonaCard"><core:Icon src="sap-icon://approvals" /><Title text="Approver" level="H4" /><Text text="Approves composition, no-contract exceptions and price documents." wrapping="true" /></VBox>
+                <FlexBox items="{app>/dashboardVisuals/masterCounts}" wrap="Wrap" class="rmcMasterPulse sapUiMediumMarginTop">
+                  <VBox class="rmcMasterPulseCard">
+                    <HBox justifyContent="SpaceBetween" alignItems="Center">
+                      <core:Icon src="{app>icon}" />
+                      <ObjectNumber number="{app>value}" />
+                    </HBox>
+                    <Title text="{app>label}" level="H4" />
+                    <Text text="{app>detail}" />
+                  </VBox>
                 </FlexBox>
 
-                <Panel headerText="Buyer request for RM master creation" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true">
+                <FlexBox wrap="Wrap" class="rmcPersonaGrid sapUiMediumMarginTop">
+                  <VBox class="rmcPersonaCard" visible="{app>/persona/canRmAdmin}"><core:Icon src="sap-icon://shield" /><Title text="RM Admin" level="H4" /><Text text="Maintains and approves RM type, grade and subgrade masters." wrapping="true" /></VBox>
+                  <VBox class="rmcPersonaCard" visible="{app>/persona/canCommodityAdmin}"><core:Icon src="sap-icon://dimension" /><Title text="Commodity Admin" level="H4" /><Text text="Maintains the acceptable commodity catalog and validity." wrapping="true" /></VBox>
+                  <VBox class="rmcPersonaCard" visible="{app>/persona/canBuyer}"><core:Icon src="sap-icon://customer-financial-fact-sheet" /><Title text="Buyer" level="H4" /><Text text="Requests masters and maintains vendor-part-contract composition." wrapping="true" /></VBox>
+                  <VBox class="rmcPersonaCard" visible="{app>/persona/canApprover}"><core:Icon src="sap-icon://approvals" /><Title text="Approver" level="H4" /><Text text="Approves composition, no-contract exceptions and price documents." wrapping="true" /></VBox>
+                </FlexBox>
+
+                <Panel headerText="Buyer request for RM master creation" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true" visible="{app>/persona/canBuyer}">
                   <FlexBox wrap="Wrap" class="rmcRequestForm">
                     <VBox><Label text="Request type" required="true" /><Select selectedKey="{app>/newRmRequest/requestType}"><core:Item key="TYPE" text="RM Type" /><core:Item key="GRADE" text="RM Grade" /><core:Item key="SUBGRADE" text="RM Subgrade" /></Select></VBox>
                     <VBox><Label text="Code" required="true" /><Input value="{app>/newRmRequest/proposedCode}" placeholder="Code" /></VBox>
@@ -81,12 +322,12 @@
                 </Panel>
 
                 <Table id="rmRequestTable" items="{app>/rmMasterRequests}" mode="SingleSelectLeft" class="sapUiMediumMarginTop" growing="true">
-                  <headerToolbar><OverflowToolbar><Title text="RM master requests" level="H3" /><ToolbarSpacer /><Button text="Submit" icon="sap-icon://paper-plane" press=".onSubmitRmRequest" /><Button text="Approve" icon="sap-icon://accept" type="Emphasized" press=".onApproveRmRequest" /><Button text="Reject" icon="sap-icon://decline" press=".onRejectRmRequest" /></OverflowToolbar></headerToolbar>
+                  <headerToolbar><OverflowToolbar><Title text="RM master requests" level="H3" /><ToolbarSpacer /><Button text="Submit" icon="sap-icon://paper-plane" press=".onSubmitRmRequest" visible="{app>/persona/canBuyer}" /><Button text="Approve" icon="sap-icon://accept" type="Emphasized" press=".onApproveRmRequest" visible="{app>/persona/canRmAdmin}" /><Button text="Reject" icon="sap-icon://decline" press=".onRejectRmRequest" visible="{app>/persona/canRmAdmin}" /></OverflowToolbar></headerToolbar>
                   <columns><Column><Text text="Request" /></Column><Column><Text text="Type" /></Column><Column><Text text="Proposed code / name" /></Column><Column><Text text="Validity" /></Column><Column><Text text="Requested by" /></Column><Column><Text text="Approved by" /></Column><Column><Text text="Status" /></Column></columns>
                   <items><ColumnListItem><cells><Text text="{app>requestNumber}" /><Text text="{app>requestType}" /><ObjectIdentifier title="{app>proposedCode}" text="{app>proposedName}" /><Text text="{app>validFrom} — {app>validTo}" /><Text text="{app>requestedBy}" /><Text text="{app>decidedBy}" /><ObjectStatus text="{app>status}" state="{= ${app>status} === 'APPROVED' ? 'Success' : (${app>status} === 'REJECTED' ? 'Error' : 'Warning') }" /></cells></ColumnListItem></items>
                 </Table>
 
-                <Panel headerText="Commodity Admin maintenance" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true">
+                <Panel headerText="Commodity Admin maintenance" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true" visible="{app>/persona/canCommodityAdmin}">
                   <FlexBox wrap="Wrap" class="rmcRequestForm">
                     <VBox><Label text="Commodity code" required="true" /><Input value="{app>/newCommodity/code}" placeholder="Example: PRECIOUS_METALS" /></VBox>
                     <VBox><Label text="Commodity name" required="true" /><Input value="{app>/newCommodity/name}" placeholder="Commodity name" /></VBox>
@@ -101,7 +342,7 @@
                 <Toolbar class="rmcMasterSearch sapUiMediumMarginTop"><Title text="Active master hierarchy" level="H3" /><ToolbarSpacer /><SearchField width="20rem" placeholder="Search by code or name" liveChange=".onMasterSearch" /></Toolbar>
                 <HBox class="rmcMasterGrid" wrap="Wrap" alignItems="Start">
                   <Table id="commodityTable" items="{app>/commodities}" mode="SingleSelectLeft" class="rmcMasterTable">
-                    <headerToolbar><OverflowToolbar><Title text="Acceptable commodities" level="H4" /><ToolbarSpacer /><Label text="Close on" /><DatePicker value="{app>/commodityCloseDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" width="10rem" /><Button text="Close validity" icon="sap-icon://calendar" press=".onCloseCommodityValidity" /><Button text="Toggle deletion marker" icon="sap-icon://delete" press=".onToggleCommodityDeletion" /></OverflowToolbar></headerToolbar>
+                    <headerToolbar><OverflowToolbar><Title text="Acceptable commodities" level="H4" /><ToolbarSpacer /><Label text="Close on" visible="{app>/persona/canCommodityAdmin}" /><DatePicker value="{app>/commodityCloseDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" width="10rem" visible="{app>/persona/canCommodityAdmin}" /><Button text="Close validity" icon="sap-icon://calendar" press=".onCloseCommodityValidity" visible="{app>/persona/canCommodityAdmin}" /><Button text="Toggle deletion marker" icon="sap-icon://delete" press=".onToggleCommodityDeletion" visible="{app>/persona/canCommodityAdmin}" /></OverflowToolbar></headerToolbar>
                     <columns><Column><Text text="Code / name" /></Column><Column><Text text="Validity" /></Column><Column><Text text="State" /></Column></columns>
                     <items><ColumnListItem><cells><ObjectIdentifier title="{app>code}" text="{app>name}" /><Text text="{app>validFrom} — {app>validTo}" /><ObjectStatus text="{= ${app>markedForDeletion} ? 'Marked deleted' : ${app>status} }" state="{= ${app>markedForDeletion} ? 'Error' : 'Success' }" /></cells></ColumnListItem></items>
                   </Table>
@@ -125,15 +366,70 @@
               </VBox>
             </IconTabFilter>
 
-            <IconTabFilter key="prices" text="Commodity Prices" icon="sap-icon://line-chart">
-              <Table id="priceTable" items="{app>/priceChanges}" mode="SingleSelectLeft" selectionChange=".onPriceSelectionChange" sticky="HeaderToolbar,ColumnHeaders" growing="true" growingThreshold="50">
+            <IconTabFilter key="prices" text="Commodity Prices" icon="sap-icon://line-chart" visible="{app>/persona/showPrices}">
+              <VBox class="sapUiMediumMarginTop">
+                <HBox class="rmcSectionHero rmcPriceSectionHero" alignItems="Center">
+                  <core:Icon src="sap-icon://line-chart" size="2.5rem" />
+                  <VBox>
+                    <Text text="REFERENCE-INSPIRED PRICING GOVERNANCE" class="rmcDashboardEyebrow" />
+                    <Title text="Vendor raw-material price control" level="H2" />
+                    <Text text="Review current and proposed rates, validity, workflow state and downstream price-document readiness." />
+                  </VBox>
+                </HBox>
+                <FlexBox wrap="Wrap" class="rmcPricePulse sapUiMediumMarginTop">
+                  <VBox class="rmcPricePulseCard">
+                    <HBox justifyContent="SpaceBetween"><core:Icon src="sap-icon://documents" /><ObjectNumber number="{app>/dashboardVisuals/priceRequestCount}" /></HBox>
+                    <Title text="Price requests" level="H4" /><Text text="Loaded change set" />
+                  </VBox>
+                  <VBox class="rmcPricePulseCard">
+                    <HBox justifyContent="SpaceBetween"><core:Icon src="sap-icon://approvals" /><ObjectNumber number="{app>/dashboardVisuals/approvedPrices}" state="Success" /></HBox>
+                    <Title text="Approved prices" level="H4" /><Text text="Governed revisions" />
+                  </VBox>
+                  <VBox class="rmcPricePulseCard rmcPriceMovementCard">
+                    <Text text="SELECTED PRICE MOVEMENT" class="rmcDashboardEyebrow" />
+                    <HBox alignItems="Center" class="rmcPriceMovement"><ObjectNumber number="{app>/dashboardVisuals/selectedOldPrice}" /><core:Icon src="sap-icon://arrow-right" /><ObjectNumber number="{app>/dashboardVisuals/selectedProposedPrice}" emphasized="true" /></HBox>
+                    <Text text="{app>/dashboardVisuals/selectedRequestNumber}" />
+                  </VBox>
+                  <VBox class="rmcPricePulseCard rmcPriceStateCard">
+                    <Text text="WORKFLOW / DOCUMENT" class="rmcDashboardEyebrow" />
+                    <ObjectStatus text="{app>/dashboardVisuals/selectedPriceStatus}" state="Warning" inverted="true" />
+                    <ObjectStatus text="{app>/dashboardVisuals/selectedDocumentStatus}" state="Information" />
+                  </VBox>
+                </FlexBox>
+                <Panel headerText="Create governed price change" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="false" visible="{app>/persona/canBuyer}">
+                  <MessageStrip text="Create by absolute rate or delta. The server derives the effective old price, blocks overlapping requests and preserves all amendment dates and references." type="Information" showIcon="true" />
+                  <FlexBox wrap="Wrap" class="rmcRequestForm sapUiSmallMarginTop">
+                    <VBox><Label text="Supplier" required="true" /><Select selectedKey="{app>/newPriceChange/supplierID}" items="{app>/suppliers}"><core:Item key="{app>ID}" text="{app>code} · {app>name}" /></Select></VBox>
+                    <VBox><Label text="RM grade" required="true" /><Select selectedKey="{app>/newPriceChange/gradeID}" items="{app>/rmGrades}"><core:Item key="{app>ID}" text="{app>code} · {app>name}" /></Select></VBox>
+                    <VBox><Label text="RM subgrade" /><Select selectedKey="{app>/newPriceChange/subGradeID}" items="{app>/rmSubGrades}"><core:Item key="{app>ID}" text="{app>code} · {app>name}" /></Select></VBox>
+                    <VBox><Label text="Plant" /><Input value="{app>/newPriceChange/plant}" /></VBox>
+                    <VBox><Label text="Purchasing org" /><Input value="{app>/newPriceChange/purchasingOrg}" /></VBox>
+                    <VBox><Label text="Entry mode" /><Select selectedKey="{app>/newPriceChange/inputMode}"><core:Item key="ABSOLUTE" text="Absolute rate" /><core:Item key="DELTA" text="Rate delta" /></Select></VBox>
+                    <VBox><Label text="Entered rate / delta" required="true" /><Input value="{app>/newPriceChange/enteredValue}" type="Number" /></VBox>
+                    <VBox><Label text="Price unit" /><Input value="{app>/newPriceChange/priceUnit}" type="Number" /></VBox>
+                    <VBox><Label text="Price UoM" /><Input value="{app>/newPriceChange/priceUoM}" /></VBox>
+                    <VBox><Label text="Currency" /><Input value="{app>/newPriceChange/currency}" /></VBox>
+                    <VBox><Label text="First amendment / valid from" required="true" /><DatePicker value="{app>/newPriceChange/validFrom}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
+                    <VBox><Label text="Valid to" /><DatePicker value="{app>/newPriceChange/validTo}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
+                    <VBox><Label text="Second amendment date" /><DatePicker value="{app>/newPriceChange/secondAmendmentDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
+                    <VBox><Label text="Third amendment date" /><DatePicker value="{app>/newPriceChange/thirdAmendmentDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
+                    <VBox class="rmcRequestReason"><Label text="Reason" required="true" /><Input value="{app>/newPriceChange/reason}" /></VBox>
+                    <VBox><Label text="Source reference" /><Input value="{app>/newPriceChange/sourceReference}" /></VBox>
+                    <VBox class="rmcRequestReason"><Label text="Attachment / records reference" /><Input value="{app>/newPriceChange/attachmentReference}" placeholder="Approved repository reference; no email attachment dependency" /></VBox>
+                    <VBox justifyContent="End"><Button text="Create draft" icon="sap-icon://add-document" type="Emphasized" press=".onCreatePriceChange" /></VBox>
+                  </FlexBox>
+                </Panel>
+                <HBox alignItems="End" class="sapUiMediumMarginTop" visible="{app>/persona/canApprover}">
+                  <VBox class="rmcRequestReason" width="100%"><Label text="Approval / rejection remark" required="true" /><Input width="100%" value="{app>/approvalComment}" maxLength="500" placeholder="Required before approving or rejecting price and price-document decisions" /></VBox>
+                </HBox>
+              <Table id="priceTable" items="{app>/priceChanges}" mode="SingleSelectLeft" selectionChange=".onPriceSelectionChange" sticky="HeaderToolbar,ColumnHeaders" growing="true" growingThreshold="50" class="sapUiMediumMarginTop">
                 <headerToolbar>
                   <OverflowToolbar>
                     <Title text="Vendor price changes" level="H3" />
                     <ToolbarSpacer />
-                    <Button text="Submit" icon="sap-icon://paper-plane" type="Emphasized" press=".onSubmitPrice" />
-                    <Button text="Approve" icon="sap-icon://accept" press=".onApprovePrice" />
-                    <Button text="Reject" icon="sap-icon://decline" press=".onRejectPrice" />
+                    <Button text="Submit" icon="sap-icon://paper-plane" type="Emphasized" press=".onSubmitPrice" visible="{app>/persona/canBuyer}" />
+                    <Button text="Approve" icon="sap-icon://accept" press=".onApprovePrice" visible="{app>/persona/canApprover}" />
+                    <Button text="Reject" icon="sap-icon://decline" press=".onRejectPrice" visible="{app>/persona/canApprover}" />
                     <Button text="Queue calculation" icon="sap-icon://play" press=".onQueueCalculation" visible="false" />
                   </OverflowToolbar>
                 </headerToolbar>
@@ -146,6 +442,7 @@
                   <Column hAlign="End"><Text text="Proposed" /></Column>
                   <Column><Text text="Effective" /></Column>
                   <Column><Text text="Status" /></Column>
+                  <Column><Text text="Approval step" /></Column>
                   <Column><Text text="Price document" /></Column>
                 </columns>
                 <items>
@@ -155,18 +452,20 @@
                       <ObjectIdentifier title="{app>supplier/name}" text="{app>supplier/code}" />
                       <ObjectIdentifier title="{app>grade/code}" text="{app>grade/name}" />
                       <ObjectIdentifier title="{app>subGrade/code}" text="{app>subGrade/name}" />
-                      <ObjectNumber number="{app>oldPrice}" unit="{app>currency}/{app>priceUoM}" />
-                      <ObjectNumber number="{app>proposedPrice}" unit="{app>currency}/{app>priceUoM}" emphasized="true" />
+                      <ObjectNumber number="{path:'app>oldPrice', type:'sap.ui.model.type.Float', formatOptions:{maxFractionDigits:3}}" unit="{app>currency}/{app>priceUoM}" />
+                      <ObjectNumber number="{path:'app>proposedPrice', type:'sap.ui.model.type.Float', formatOptions:{maxFractionDigits:3}}" unit="{app>currency}/{app>priceUoM}" emphasized="true" />
                       <Text text="{app>validFrom}" />
                       <ObjectStatus text="{app>status}" state="{= ${app>status} === 'APPROVED' ? 'Success' : (${app>status} === 'REJECTED' ? 'Error' : 'Warning') }" />
+                      <Text text="{app>currentApprovalStep} / {app>totalApprovalSteps}" />
                       <ObjectStatus text="{app>priceDocumentStatus}" state="{= ${app>priceDocumentStatus} === 'APPROVED' ? 'Success' : (${app>priceDocumentStatus} === 'REJECTED' ? 'Error' : 'Warning') }" />
                     </cells>
                   </ColumnListItem>
                 </items>
               </Table>
+              </VBox>
             </IconTabFilter>
 
-            <IconTabFilter key="workbench" text="Pricing Workbench" icon="sap-icon://table-chart">
+            <IconTabFilter key="workbench" text="Pricing Workbench" icon="sap-icon://table-chart" visible="{app>/persona/showWorkbench}">
               <VBox class="rmcWorkbench">
                 <VBox class="rmcWorkbenchHero">
                   <HBox justifyContent="SpaceBetween" alignItems="Start" wrap="Wrap">
@@ -181,13 +480,13 @@
                     </VBox>
                   </HBox>
                   <OverflowToolbar class="rmcWorkbenchActions">
-                    <Text text="Buyer release" />
-                    <Button text="Simulation only" icon="sap-icon://simulate" press=".onReleaseSimulation" />
-                    <Button text="Release amendment" icon="sap-icon://paper-plane" type="Emphasized" press=".onReleaseAmendment" />
+                    <Text text="Buyer release" visible="{app>/persona/canBuyer}" />
+                    <Button text="Simulation only" icon="sap-icon://simulate" press=".onReleaseSimulation" visible="{app>/persona/canBuyer}" />
+                    <Button text="Release amendment" icon="sap-icon://paper-plane" type="Emphasized" press=".onReleaseAmendment" visible="{app>/persona/canBuyer}" />
                     <ToolbarSpacer />
-                    <Text text="Approver decision" />
-                    <Button text="Approve" icon="sap-icon://accept" press=".onApprovePriceDocument" />
-                    <Button text="Reject" icon="sap-icon://decline" press=".onRejectPriceDocument" />
+                    <Text text="Approver decision" visible="{app>/persona/canApprover}" />
+                    <Button text="Approve" icon="sap-icon://accept" press=".onApprovePriceDocument" visible="{app>/persona/canApprover}" />
+                    <Button text="Reject" icon="sap-icon://decline" press=".onRejectPriceDocument" visible="{app>/persona/canApprover}" />
                   </OverflowToolbar>
                   <FlexBox wrap="Wrap" class="rmcMetricStrip">
                     <VBox class="rmcMetricCard"><Text text="CURRENT PART PRICE" /><ObjectNumber number="{app>/workbench/currentPoPrice}" unit="{app>/workbench/currency}" /></VBox>
@@ -197,6 +496,25 @@
                     <VBox class="rmcMetricCard rmcMetricImpact"><Text text="RETROSPECTIVE IMPACT" /><ObjectNumber number="{app>/workbench/estimatedImpact}" unit="{app>/workbench/currency}" emphasized="true" /></VBox>
                   </FlexBox>
                 </VBox>
+
+                <FlexBox wrap="Wrap" class="rmcDecisionRail sapUiMediumMarginTop">
+                  <HBox class="rmcDecisionCard" alignItems="Center">
+                    <core:Icon src="sap-icon://database" />
+                    <VBox><Text text="SOURCE INTEGRITY" /><Title text="Server-calculated" level="H4" /><Text text="Approved composition and governed prices" /></VBox>
+                  </HBox>
+                  <HBox class="rmcDecisionCard" alignItems="Center">
+                    <core:Icon src="sap-icon://quality-issue" />
+                    <VBox><Text text="DATA QUALITY" /><Title text="{= ${app>/dashboardVisuals/openFindings} + ' open findings' }" level="H4" /><ObjectStatus text="{= ${app>/dashboardVisuals/openFindings} === 0 ? 'Ready for decision' : 'Attention required' }" state="{= ${app>/dashboardVisuals/openFindings} === 0 ? 'Success' : 'Warning' }" /></VBox>
+                  </HBox>
+                  <HBox class="rmcDecisionCard" alignItems="Center">
+                    <core:Icon src="sap-icon://workflow-tasks" />
+                    <VBox><Text text="RELEASE PATH" /><Title text="{app>/workbench/releaseStatus}" level="H4" /><Text text="Simulation and amendment remain separated" /></VBox>
+                  </HBox>
+                  <HBox class="rmcDecisionCard rmcDecisionImpact" alignItems="Center">
+                    <core:Icon src="sap-icon://money-bills" />
+                    <VBox><Text text="DECISION EXPOSURE" /><ObjectNumber number="{app>/workbench/estimatedImpact}" unit="{app>/workbench/currency}" emphasized="true" /><Text text="{app>/workbench/affectedParts} affected part(s)" /></VBox>
+                  </HBox>
+                </FlexBox>
 
                 <Panel headerText="End-to-end pricing journey" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="false">
                   <FlexBox items="{app>/processStages}" wrap="NoWrap" class="rmcStageFlow">
@@ -337,7 +655,7 @@
                   </FlexBox>
                   <MessageStrip text="Contract-price update and retrospective financial posting are deliberately separate controlled execution paths. This trial simulates them and never calls S/4HANA." type="Warning" showIcon="true" class="sapUiMediumMarginTop" />
                   <Table items="{app>/proposals}" class="sapUiMediumMarginTop">
-                    <headerToolbar><Toolbar><Title text="Approved contract-price handoff" level="H4" /><ToolbarSpacer /><Button text="Reconcile selected price document" icon="sap-icon://compare" press=".onReconcilePriceChange" /><ObjectStatus text="Existing debit/provision automation remains downstream" state="Information" /></Toolbar></headerToolbar>
+                    <headerToolbar><Toolbar><Title text="Approved contract-price handoff" level="H4" /><ToolbarSpacer /><Button text="Reconcile selected price document" icon="sap-icon://compare" press=".onReconcilePriceChange" visible="{app>/persona/canApprover}" /><ObjectStatus text="Existing debit/provision automation remains downstream" state="Information" /></Toolbar></headerToolbar>
                     <columns><Column><Text text="Proposal" /></Column><Column><Text text="Contract / item" /></Column><Column hAlign="End"><Text text="Old price" /></Column><Column hAlign="End"><Text text="Approved price" /></Column><Column><Text text="Validity" /></Column><Column><Text text="Handoff state" /></Column></columns>
                     <items><ColumnListItem><cells><Text text="{app>proposalNumber}" /><ObjectIdentifier title="{app>contractItem/contract/contractNumber}" text="{app>contractItem/itemNumber}" /><ObjectNumber number="{app>oldPrice}" unit="{app>currency}" /><ObjectNumber number="{app>proposedPrice}" unit="{app>currency}" emphasized="true" /><Text text="{app>validFrom}" /><ObjectStatus text="{app>s4WorkflowStatus}" state="Success" /></cells></ColumnListItem></items>
                   </Table>
@@ -350,15 +668,22 @@
               </VBox>
             </IconTabFilter>
 
-            <IconTabFilter key="content" text="Part RM Content" icon="sap-icon://product">
+            <IconTabFilter key="content" text="Part RM Content" icon="sap-icon://product" visible="{app>/persona/showPartContent}">
               <VBox class="sapUiMediumMarginTop">
               <HBox class="rmcSectionHero" alignItems="Center"><core:Icon src="sap-icon://tree" size="2.5rem" /><VBox><Title text="Vendor-part-contract composition" level="H2" /><Text text="Contract allocation, part revision, BOM lineage and leaf-level RM weights." /></VBox></HBox>
-              <Panel headerText="Buyer linkage and valid-contract search" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true">
+              <Panel headerText="Buyer linkage and valid-contract search" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true" visible="{app>/persona/canBuyer}">
                 <FlexBox wrap="Wrap" class="rmcRequestForm">
                   <VBox><Label text="Supplier" required="true" /><Select selectedKey="{app>/newLinkage/supplierID}" items="{app>/suppliers}"><core:Item key="{app>ID}" text="{app>code} · {app>name}" /></Select></VBox>
                   <VBox><Label text="Material / part" required="true" /><Select selectedKey="{app>/newLinkage/materialID}" items="{app>/materials}"><core:Item key="{app>ID}" text="{app>code} · {app>description}" /></Select></VBox>
                   <VBox><Label text="Plant" required="true" /><Input value="{app>/newLinkage/plant}" /></VBox>
                   <VBox><Label text="Purchasing org" /><Input value="{app>/newLinkage/purchasingOrg}" /></VBox>
+                  <VBox><Label text="VPL type" required="true" /><Select selectedKey="{app>/newLinkage/linkageType}"><core:Item key="BOUGHT_OUT" text="Bought out" /><core:Item key="MASOP" text="MASOP" /></Select></VBox>
+                  <VBox><Label text="Part type" required="true" /><Select selectedKey="{app>/newLinkage/partType}"><core:Item key="BOUGHT_OUT" text="Bought out" /><core:Item key="MASOP_RM" text="MASOP RM" /><core:Item key="MASOP_BOP" text="MASOP BOP" /></Select></VBox>
+                  <VBox><Label text="Indexing frequency" /><Select selectedKey="{app>/newLinkage/indexingFrequency}"><core:Item key="MONTHLY" text="Monthly" /><core:Item key="QUARTERLY" text="Quarterly" /><core:Item key="HALF_YEARLY" text="Half yearly" /><core:Item key="ANNUAL" text="Annual" /><core:Item key="REQUEST_BASED" text="Request based" /></Select></VBox>
+                  <VBox><Label text="Initial settled rate" /><Input value="{app>/newLinkage/initialSettledRate}" type="Number" /></VBox>
+                  <VBox><Label text="Initial-rate currency" /><Input value="{app>/newLinkage/initialRateCurrency}" /></VBox>
+                  <VBox><Label text="Preliminary exposure" /><Switch state="{app>/newLinkage/preliminaryExposure}" /></VBox>
+                  <VBox><Label text="Source / Go-Fast reference" /><Input value="{app>/newLinkage/sourceReference}" /></VBox>
                   <VBox><Label text="Part revision" required="true" /><Input value="{app>/newLinkage/revisionLevel}" /></VBox>
                   <VBox><Label text="Valid from" required="true" /><DatePicker value="{app>/newLinkage/validFrom}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
                   <VBox><Label text="Valid to" /><DatePicker value="{app>/newLinkage/validTo}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
@@ -368,20 +693,20 @@
                 </FlexBox>
               </Panel>
               <Table id="linkageTable" items="{app>/vendorPartLinkages}" mode="SingleSelectLeft" selectionChange=".onLinkageSelectionChange" growing="true" growingThreshold="50" class="sapUiMediumMarginTop">
-                <headerToolbar><OverflowToolbar><Title text="Vendor-part linkages" level="H3" /><ToolbarSpacer /><Button text="Approve exception" icon="sap-icon://accept" press=".onApproveContractException" /><Button text="Reject exception" icon="sap-icon://decline" press=".onRejectContractException" /><Button text="Allocate selected contract" icon="sap-icon://chain-link" press=".onAllocateContract" /><ObjectStatus text="Buyer / Approver controlled" state="Information" /></OverflowToolbar></headerToolbar>
-                <columns><Column><Text text="Supplier" /></Column><Column><Text text="Part" /></Column><Column><Text text="Plant / purchasing org" /></Column><Column><Text text="Revision" /></Column><Column><Text text="Contract / item" /></Column><Column><Text text="Validity" /></Column><Column><Text text="Contract state" /></Column><Column><Text text="Exception approval" /></Column><Column><Text text="Status" /></Column></columns>
-                <items><ColumnListItem><cells><ObjectIdentifier title="{app>supplier/name}" text="{app>supplier/code}" /><ObjectIdentifier title="{app>material/code}" text="{app>material/description}" /><Text text="{app>plant} / {app>purchasingOrg}" /><Text text="{app>revisionLevel}" /><ObjectIdentifier title="{app>contractItem/contract/contractNumber}" text="{app>contractItem/itemNumber}" /><Text text="{app>validFrom} — {app>validTo}" /><ObjectStatus text="{app>contractStatus}" state="{= ${app>contractStatus} === 'ALLOCATED' ? 'Success' : 'Warning' }" /><ObjectStatus text="{app>exceptionApprovalStatus}" state="Information" /><ObjectStatus text="{app>status}" state="Success" /></cells></ColumnListItem></items>
+                <headerToolbar><OverflowToolbar><Title text="Vendor-part linkages" level="H3" /><ToolbarSpacer /><Button text="Approve exception" icon="sap-icon://accept" press=".onApproveContractException" visible="{app>/persona/canApprover}" /><Button text="Reject exception" icon="sap-icon://decline" press=".onRejectContractException" visible="{app>/persona/canApprover}" /><Button text="Allocate selected contract" icon="sap-icon://chain-link" press=".onAllocateContract" visible="{app>/persona/canBuyer}" /><ObjectStatus text="Buyer / Approver controlled" state="Information" /></OverflowToolbar></headerToolbar>
+                <columns><Column><Text text="Supplier" /></Column><Column><Text text="Part" /></Column><Column><Text text="Plant / purchasing org" /></Column><Column><Text text="VPL / part type" /></Column><Column><Text text="Frequency / initial rate" /></Column><Column><Text text="Revision" /></Column><Column><Text text="Contract / item" /></Column><Column><Text text="Validity" /></Column><Column><Text text="Contract state" /></Column><Column><Text text="Exception approval" /></Column><Column><Text text="Status" /></Column></columns>
+                <items><ColumnListItem><cells><ObjectIdentifier title="{app>supplier/name}" text="{app>supplier/code}" /><ObjectIdentifier title="{app>material/code}" text="{app>material/description}" /><Text text="{app>plant} / {app>purchasingOrg}" /><ObjectIdentifier title="{app>linkageType}" text="{app>partType}" /><ObjectIdentifier title="{app>indexingFrequency}" text="{app>initialSettledRate} {app>initialRateCurrency}" /><Text text="{app>revisionLevel}" /><ObjectIdentifier title="{app>contractItem/contract/contractNumber}" text="{app>contractItem/itemNumber}" /><Text text="{app>validFrom} — {app>validTo}" /><ObjectStatus text="{app>contractStatus}" state="{= ${app>contractStatus} === 'ALLOCATED' ? 'Success' : 'Warning' }" /><ObjectStatus text="{app>exceptionApprovalStatus}" state="Information" /><ObjectStatus text="{app>status}" state="Success" /></cells></ColumnListItem></items>
               </Table>
               <MessageStrip text="If no valid contract exists, Buyer may continue only after additional exception approval. Contract allocation remains open and can be completed later." type="Warning" showIcon="true" class="sapUiMediumMarginTop" />
               <Panel headerText="Revisioned BOM composition workflow" class="rmcWorkbenchPanel sapUiMediumMarginTop" expandable="true" expanded="true">
-                <FlexBox wrap="Wrap" class="rmcRequestForm">
+                <FlexBox wrap="Wrap" class="rmcRequestForm" visible="{app>/persona/canBuyer}">
                   <VBox><Label text="BOM header" required="true" /><Select selectedKey="{app>/newComposition/bomHeaderID}" items="{app>/bomHeaders}"><core:Item key="{app>ID}" text="{app>material/code} · {app>plant} · {app>alternative}" /></Select></VBox>
                   <VBox><Label text="Composition valid from" /><DatePicker value="{app>/newComposition/validFrom}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
                   <VBox><Label text="Composition valid to" /><DatePicker value="{app>/newComposition/validTo}" valueFormat="yyyy-MM-dd" displayFormat="medium" /></VBox>
                   <VBox justifyContent="End"><Button text="Create revision" icon="sap-icon://copy" type="Emphasized" press=".onCreateCompositionRevision" /></VBox>
                 </FlexBox>
                 <Table id="profileTable" items="{app>/profiles}" mode="SingleSelectLeft" selectionChange=".onProfileSelectionChange" growing="true" class="sapUiMediumMarginTop">
-                  <headerToolbar><OverflowToolbar><Title text="Composition revisions" level="H4" /><ToolbarSpacer /><Button text="Submit" icon="sap-icon://paper-plane" press=".onSubmitComposition" /><Button text="Approve" icon="sap-icon://accept" type="Emphasized" press=".onApproveComposition" /><Button text="Reject" icon="sap-icon://decline" press=".onRejectComposition" /></OverflowToolbar></headerToolbar>
+                  <headerToolbar><OverflowToolbar><Title text="Composition revisions" level="H4" /><ToolbarSpacer /><Button text="Submit" icon="sap-icon://paper-plane" press=".onSubmitComposition" visible="{app>/persona/canBuyer}" /><Button text="Approve" icon="sap-icon://accept" type="Emphasized" press=".onApproveComposition" visible="{app>/persona/canApprover}" /><Button text="Reject" icon="sap-icon://decline" press=".onRejectComposition" visible="{app>/persona/canApprover}" /></OverflowToolbar></headerToolbar>
                   <columns><Column><Text text="Revision" /></Column><Column><Text text="Part / supplier" /></Column><Column><Text text="Validity" /></Column><Column><Text text="Completeness" /></Column><Column><Text text="Contract control" /></Column><Column><Text text="Status" /></Column></columns>
                   <items><ColumnListItem><cells><Text text="{app>revisionLevel}" /><ObjectIdentifier title="{app>material/code}" text="{app>supplier/code}" /><Text text="{app>validFrom} — {app>validTo}" /><ObjectNumber number="{app>completenessPct}" unit="%" /><ObjectStatus text="{app>contractExceptionStatus}" state="Information" /><ObjectStatus text="{app>status}" state="{= ${app>status} === 'APPROVED' ? 'Success' : (${app>status} === 'REJECTED' ? 'Error' : 'Warning') }" /></cells></ColumnListItem></items>
                 </Table>
@@ -390,7 +715,7 @@
                   <columns><Column><Text text="Depth" /></Column><Column><Text text="Item" /></Column><Column><Text text="Lineage" /></Column><Column><Text text="Quantity" /></Column><Column><Text text="Mapping level" /></Column></columns>
                   <items><ColumnListItem highlight="{= ${app>leafPart} ? 'Information' : 'None' }"><cells><Text text="{app>hierarchyDepth}" /><ObjectIdentifier title="{app>materialCode}" text="{app>materialDescription}" /><Text text="{app>lineagePath}" /><ObjectNumber number="{app>quantity}" unit="{app>uoM}" /><ObjectStatus text="{= ${app>leafPart} ? 'Leaf — RM mapping allowed' : 'Assembly' }" state="{= ${app>leafPart} ? 'Information' : 'None' }" /></cells></ColumnListItem></items>
                 </Table>
-                <FlexBox wrap="Wrap" class="rmcRequestForm sapUiMediumMarginTop">
+                <FlexBox wrap="Wrap" class="rmcRequestForm sapUiMediumMarginTop" visible="{app>/persona/canBuyer}">
                   <VBox><Label text="BOM leaf" required="true" /><Select selectedKey="{app>/leafMapping/bomItemID}" items="{app>/bomHierarchy}"><core:Item key="{app>bomItemID}" text="{app>lineagePath}" /></Select></VBox>
                   <VBox><Label text="RM grade" required="true" /><Select selectedKey="{app>/leafMapping/gradeID}" items="{app>/rmGrades}"><core:Item key="{app>ID}" text="{app>code} · {app>name}" /></Select></VBox>
                   <VBox><Label text="RM subgrade" /><Select selectedKey="{app>/leafMapping/subGradeID}" items="{app>/rmSubGrades}"><core:Item key="{app>ID}" text="{app>code} · {app>name}" /></Select></VBox>
@@ -401,9 +726,35 @@
                   <VBox class="rmcRequestReason"><Label text="Override reason" /><Input value="{app>/leafMapping/overrideReason}" /></VBox>
                   <VBox justifyContent="End"><Button text="Map selected leaf" icon="sap-icon://map" type="Emphasized" press=".onMapCompositionLeaf" /></VBox>
                 </FlexBox>
+                <Panel headerText="Engineering and commercial attributes from legacy VPL" expandable="true" expanded="false" class="sapUiMediumMarginTop" visible="{app>/persona/canBuyer}">
+                  <MessageStrip text="These fields preserve legacy thickness, geometry, offcut, surface, bought-out and packaging detail. Financial formulas remain inactive until Finance approves the rule catalog." type="Information" showIcon="true" />
+                  <FlexBox wrap="Wrap" class="rmcRequestForm sapUiSmallMarginTop">
+                    <VBox><Label text="Minimum thickness" /><Input value="{app>/leafMapping/minimumThickness}" type="Number" /></VBox>
+                    <VBox><Label text="Maximum thickness" /><Input value="{app>/leafMapping/maximumThickness}" type="Number" /></VBox>
+                    <VBox><Label text="Tube outside diameter" /><Input value="{app>/leafMapping/tubeOutsideDiameter}" type="Number" /></VBox>
+                    <VBox><Label text="Length" /><Input value="{app>/leafMapping/length}" type="Number" /></VBox>
+                    <VBox><Label text="Width" /><Input value="{app>/leafMapping/width}" type="Number" /></VBox>
+                    <VBox><Label text="Number of blanks" /><Input value="{app>/leafMapping/numberOfBlanks}" type="Number" /></VBox>
+                    <VBox><Label text="PLM weight" /><Input value="{app>/leafMapping/plmWeight}" type="Number" /></VBox>
+                    <VBox><Label text="Finish weight" /><Input value="{app>/leafMapping/finishWeight}" type="Number" /></VBox>
+                    <VBox><Label text="Forge / cast weight" /><Input value="{app>/leafMapping/forgeCastWeight}" type="Number" /></VBox>
+                    <VBox><Label text="Offcut weight" /><Input value="{app>/leafMapping/offcutWeight}" type="Number" /></VBox>
+                    <VBox><Label text="Offcut %" /><Input value="{app>/leafMapping/offcutPct}" type="Number" /></VBox>
+                    <VBox><Label text="Scrap yield %" /><Input value="{app>/leafMapping/scrapYieldPct}" type="Number" /></VBox>
+                    <VBox><Label text="Surface area" /><Input value="{app>/leafMapping/surfaceArea}" type="Number" /></VBox>
+                    <VBox><Label text="Surface-area UoM" /><Input value="{app>/leafMapping/surfaceAreaUoM}" /></VBox>
+                    <VBox><Label text="Surface protection process" /><Input value="{app>/leafMapping/surfaceProcess}" /></VBox>
+                    <VBox><Label text="Surface protection cost" /><Input value="{app>/leafMapping/surfaceProtectionCost}" type="Number" /></VBox>
+                    <VBox><Label text="Bought-out cost" /><Input value="{app>/leafMapping/boughtOutCost}" type="Number" /></VBox>
+                    <VBox><Label text="Packaging &amp; terms cost" /><Input value="{app>/leafMapping/packagingTermsCost}" type="Number" /></VBox>
+                    <VBox><Label text="Polypropylene content" /><Input value="{app>/leafMapping/polypropyleneContent}" type="Number" /></VBox>
+                    <VBox><Label text="Talc %" /><Input value="{app>/leafMapping/talcPct}" type="Number" /></VBox>
+                    <VBox><Label text="Impact modifier" /><Input value="{app>/leafMapping/impactModifier}" type="Number" /></VBox>
+                  </FlexBox>
+                </Panel>
               </Panel>
               <Table id="exceptionTable" items="{app>/workflowExceptions}" mode="SingleSelectLeft" growing="true" class="sapUiMediumMarginTop">
-                <headerToolbar><OverflowToolbar><Title text="Workflow and data-quality findings" level="H3" /><ToolbarSpacer /><Button text="Resolve" icon="sap-icon://complete" press=".onResolveException" /><Button text="Exclude non-mandatory" icon="sap-icon://sys-cancel" press=".onExcludeException" /></OverflowToolbar></headerToolbar>
+                <headerToolbar><OverflowToolbar><Title text="Workflow and data-quality findings" level="H3" /><ToolbarSpacer /><Button text="Resolve" icon="sap-icon://complete" press=".onResolveException" visible="{app>/persona/canBuyer}" /><Button text="Exclude non-mandatory" icon="sap-icon://sys-cancel" press=".onExcludeException" visible="{app>/persona/canApprover}" /></OverflowToolbar></headerToolbar>
                 <columns><Column><Text text="Object" /></Column><Column><Text text="Finding" /></Column><Column><Text text="Message" /></Column><Column><Text text="Mandatory" /></Column><Column><Text text="Status" /></Column><Column><Text text="Resolution" /></Column></columns>
                 <items><ColumnListItem><cells><Text text="{app>objectType}" /><Text text="{app>code}" /><Text text="{app>message}" /><ObjectStatus text="{= ${app>mandatory} ? 'Mandatory' : 'Advisory' }" state="{= ${app>mandatory} ? 'Error' : 'Warning' }" /><ObjectStatus text="{app>status}" state="{= ${app>status} === 'OPEN' ? 'Error' : 'Success' }" /><Text text="{app>resolution}" /></cells></ColumnListItem></items>
               </Table>
@@ -429,9 +780,9 @@
                       <ObjectIdentifier title="Revision {app>profile/revisionLevel}" text="{app>profile/validFrom} — {app>profile/validTo}" />
                       <ObjectIdentifier title="{app>grade/rawMaterialType/code} · {app>grade/code}" text="{app>subGrade/code} · {app>subGrade/name}" />
                       <Text text="{app>lineagePath}" />
-                      <ObjectNumber number="{app>inputWeight}" unit="{app>contentUoM}" />
-                      <ObjectNumber number="{app>outputWeight}" unit="{app>contentUoM}" />
-                      <ObjectNumber number="{app>scrapWeight}" unit="{app>contentUoM}" />
+                      <ObjectNumber number="{path: 'app>inputWeight', type: 'sap.ui.model.type.Float', formatOptions: {maxFractionDigits: 3}}" unit="{app>contentUoM}" />
+                      <ObjectNumber number="{path: 'app>outputWeight', type: 'sap.ui.model.type.Float', formatOptions: {maxFractionDigits: 3}}" unit="{app>contentUoM}" />
+                      <ObjectNumber number="{path: 'app>scrapWeight', type: 'sap.ui.model.type.Float', formatOptions: {maxFractionDigits: 3}}" unit="{app>contentUoM}" />
                       <Text text="{app>source}" />
                       <ObjectStatus text="{app>profile/status}" state="Success" />
                     </cells>
@@ -483,7 +834,29 @@
               </Table>
             </IconTabFilter>
 
-            <IconTabFilter key="admin" text="Administration" icon="sap-icon://action-settings">
+            <IconTabFilter key="governance" text="Controls &amp; Audit" icon="sap-icon://shield" visible="{app>/persona/showGovernance}">
+              <VBox class="sapUiMediumMarginTop">
+                <HBox class="rmcSectionHero" alignItems="Center"><core:Icon src="sap-icon://shield" size="2.5rem" /><VBox><Title text="Legacy issue prevention and audit evidence" level="H2" /><Text text="Every reported legacy weakness is linked to an implemented safeguard, a gated target control or an explicit decision." /></VBox></HBox>
+                <MessageStrip text="Controls marked PARTIAL, PLANNED_T2, GATED_FOR_PRODUCTION or AWAITING_FINANCE_RULES are transparent backlog items and must not be represented as complete." type="Warning" showIcon="true" class="sapUiMediumMarginTop" />
+                <Table items="{app>/legacyControls}" growing="true" class="sapUiMediumMarginTop" sticky="ColumnHeaders">
+                  <headerToolbar><Toolbar><Title text="Legacy issue-control matrix" level="H3" /><ToolbarSpacer /><ObjectStatus text="Live parity evidence" state="Information" /></Toolbar></headerToolbar>
+                  <columns><Column><Text text="Control" /></Column><Column><Text text="Area" /></Column><Column><Text text="Legacy risk" /></Column><Column><Text text="Current safeguard" /></Column><Column><Text text="Status" /></Column><Column><Text text="Evidence" /></Column></columns>
+                  <items><ColumnListItem><cells><Text text="{app>controlId}" /><Text text="{app>area}" /><Text text="{app>legacyRisk}" /><Text text="{app>safeguard}" /><ObjectStatus text="{app>implementationStatus}" state="{= ${app>implementationStatus}.indexOf('IMPLEMENTED') === 0 ? 'Success' : (${app>implementationStatus} === 'PARTIAL' ? 'Warning' : 'Information') }" /><Text text="{app>evidence}" /></cells></ColumnListItem></items>
+                </Table>
+                <Table items="{app>/approvalRecords}" growing="true" growingThreshold="100" class="sapUiMediumMarginTop" sticky="ColumnHeaders">
+                  <headerToolbar><Toolbar><Title text="Approval and decision history" level="H3" /><ToolbarSpacer /><ObjectStatus text="Immutable evidence" state="Success" /></Toolbar></headerToolbar>
+                  <columns><Column><Text text="Object" /></Column><Column><Text text="Version / step" /></Column><Column><Text text="Decision" /></Column><Column><Text text="Actor / role" /></Column><Column><Text text="Remark" /></Column><Column><Text text="Decided at" /></Column></columns>
+                  <items><ColumnListItem><cells><ObjectIdentifier title="{app>objectType}" text="{app>objectID}" /><Text text="v{app>objectVersion} / step {app>step}" /><ObjectStatus text="{app>decision}" state="{= ${app>decision} === 'APPROVED' || ${app>decision} === 'MATCHED' ? 'Success' : (${app>decision} === 'REJECTED' ? 'Error' : 'Information') }" /><ObjectIdentifier title="{app>actor}" text="{app>actorRole}" /><Text text="{app>comment}" /><Text text="{app>decidedAt}" /></cells></ColumnListItem></items>
+                </Table>
+                <Table items="{app>/systemEvents}" growing="true" growingThreshold="100" class="sapUiMediumMarginTop sapUiMediumMarginBottom" sticky="ColumnHeaders">
+                  <headerToolbar><Toolbar><Title text="Execution and background references" level="H3" /><ToolbarSpacer /><ObjectStatus text="Correlation trace" state="Information" /></Toolbar></headerToolbar>
+                  <columns><Column><Text text="Time" /></Column><Column><Text text="Severity / category" /></Column><Column><Text text="Correlation ID" /></Column><Column><Text text="Object" /></Column><Column><Text text="Message" /></Column></columns>
+                  <items><ColumnListItem><cells><Text text="{app>occurredAt}" /><ObjectIdentifier title="{app>severity}" text="{app>category}" /><Text text="{app>correlationId}" /><ObjectIdentifier title="{app>objectType}" text="{app>objectID}" /><Text text="{app>message}" /></cells></ColumnListItem></items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+            <IconTabFilter key="admin" text="Administration" icon="sap-icon://action-settings" visible="{app>/persona/showAdmin}">
               <MessageStrip text="Configuration changes affect new calculation snapshots only. Existing completed runs remain reproducible." type="Warning" showIcon="true" class="sapUiSmallMarginBottom" />
               <Table id="settingsTable" items="{app>/settings}" mode="SingleSelectLeft">
                 <headerToolbar><OverflowToolbar><Title text="Application settings" level="H3" /><ToolbarSpacer /><Button text="Save selected" icon="sap-icon://save" type="Emphasized" press=".onSaveSetting" /></OverflowToolbar></headerToolbar>
@@ -512,6 +885,8 @@
             </IconTabFilter>
           </items>
         </IconTabBar>
+          </VBox>
+        </HBox>
       </content>
     </Page>
   </App>

@@ -19,6 +19,7 @@ test('declares persona gates on all new mutation and reconciliation actions', as
     reconcilePriceChange: 'RmcAuditor',
     submitRmMasterRequest: 'Buyer',
     decideRmMasterRequest: 'RmAdmin',
+    createPriceChange: 'Buyer',
     submitPriceChange: 'Buyer',
     decidePriceChange: 'RmcApprover',
     releasePriceDocument: 'Buyer',

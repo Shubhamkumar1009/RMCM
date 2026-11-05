@@ -8,6 +8,18 @@ For a complete project handover, document map, new-laptop setup, and a copy-read
 
 For the pending human walkthrough and sign-off evidence, use [docs/ACCEPTANCE_REVIEW_CHECKLIST.md](docs/ACCEPTANCE_REVIEW_CHECKLIST.md).
 
+The latest browser-based visual pre-review, before/after evidence and remaining human acceptance items are in [docs/VISUAL_REVIEW_REPORT.md](docs/VISUAL_REVIEW_REPORT.md).
+
+The strict pages 1-38 reference re-audit, delivered capability mapping and intentional follow-ons are in [docs/REFERENCE_SCOPE_AUDIT.md](docs/REFERENCE_SCOPE_AUDIT.md).
+
+The complete legacy RMCM manuals, field mappings and reported-issue comparison is in [docs/LEGACY_RMCM_PARITY_AUDIT.md](docs/LEGACY_RMCM_PARITY_AUDIT.md). It distinguishes implemented parity, safer replacement controls, gated production work and Finance decisions still required.
+
+The read-only visual/interaction adoption from the user-supplied HTML proof of concept is documented in [docs/DESIGN_REFERENCE_ADOPTION.md](docs/DESIGN_REFERENCE_ADOPTION.md). No reference data, AI behavior, HANA assumption or unapproved integration was adopted.
+
+For business presentations, training and role-based operating guidance, use the editable [RMC Application Business Handbook](docs/RMC_Application_Business_Handbook.pptx). Its repeatable source is [scripts/generate-rmc-handbook.js](scripts/generate-rmc-handbook.js).
+
+For leadership review and architecture approval, use the separate editable [RMC Technical Architecture — Leadership Sign-off](docs/RMC_Technical_Architecture_Leadership_Signoff.pptx). Its repeatable source is [scripts/generate-technical-architecture-deck.js](scripts/generate-technical-architecture-deck.js).
+
 ## What is implemented
 
 - Synthetic suppliers, contracts, parts, BOMs, GRs, RM types/grades and vendor prices
@@ -15,6 +27,8 @@ For the pending human walkthrough and sign-off evidence, use [docs/ACCEPTANCE_RE
 - Revisioned vendor-part-contract linkage and leaf-level composition weights
 - Part raw-material profiles and constituent traceability
 - Vendor commodity price-change workflow
+- Buyer-created absolute or delta price requests with three amendment dates and retained source/attachment references
+- Sequential two-level price approval with mandatory remarks and immutable step/role evidence
 - Optimistic concurrency and approval audit records
 - Asynchronous, priority-based retrospective calculation queue
 - Exact decimal calculation with GR/reversal movement rules
@@ -25,10 +39,18 @@ For the pending human walkthrough and sign-off evidence, use [docs/ACCEPTANCE_RE
 - Contract-price proposal generation
 - Enriched retrospective-pricing workbench with commercial header, component cost sheet, impact equation, journey and workflow visualizations
 - Blocked price-document release for simulation-only or amendment approval, plus impacted-part reporting
-- SAPUI5 control-tower, worklists and administration UI
+- SAPUI5 control tower with an animated executive Overview: price bridge, retrospective exposure, readiness, RM contribution and seven-stage journey visuals
+- Dedicated Analytics Dashboard with clearly labelled synthetic 12-month price/index trends, supplier exposure, commodity benchmarks, workflow mix and monthly impact comparison
+- Professional enterprise UI system with a native-height SAPUI5 shell, compact executive KPIs, restrained navy/blue hierarchy, consistent operational cards and dense business-friendly workspaces
+- Responsive blue-purple worklists and administration UI with Master Data pulse cards, Commodity Price governance cards, a Pricing Workbench decision rail and reduced-motion accessibility
+- Top-right demo persona switcher for Buyer, RM Admin, Commodity Admin and Approver views; it filters tabs, forms, fields and actions for walkthroughs but is explicitly not an authentication control
+- Compact graphite application shell with collapsible persona-aware left navigation and a role-context workspace header
+- Hardened light-on-dark styling and bounded responsive tables/forms with verified overflow protection at 1440×900 and 1366×768
 - Health endpoint and Cloud Foundry trial manifest
 - Executable Buyer linkage, valid-contract/no-contract exception and later-allocation workflow
 - Recursive BOM hierarchy, revisioned leaf composition approval, workflow findings and reconciliation evidence
+- Legacy-critical VPL classification, frequency, initial-rate, geometry, weight, scrap, surface and commercial attributes with server validation
+- Source-document and calculation-line duplicate prevention plus a live legacy issue-control/audit matrix
 - Lineage-linked trial calculation reruns and idempotent simulated-posting reversals
 
 ## Trial limitations

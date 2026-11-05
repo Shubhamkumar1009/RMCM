@@ -1,0 +1,70 @@
+{
+  "capturedAt": "2026-10-31T13:10:40.953Z",
+  "url": "http://localhost:4004/rmc/webapp/index.html",
+  "viewport": "1440x900",
+  "evidence": [
+    "docs/review-evidence/ui-2026-10-31-after-fixes/01-overview.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/02-master-data-top.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/03-master-data-catalog.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/04-pricing-workbench-top.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/05-impacted-parts.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/06-reconciliation.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/07-part-rm-content-top.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/08-workflow-findings.jpg",
+    "docs/review-evidence/ui-2026-10-31-after-fixes/09-approved-composition.jpg"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:4004/rmc/webapp/Component-preload.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:4004/rmc/webapp/Component-preload.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "2026-10-31 18:40:32.096699 failed to load JavaScript resource: rmc/app/Component-preload.js -  sap.ui.ModuleSystem"
+  ],
+  "pageErrors": [],
+  "layout": {
+    "viewportWidth": 1440,
+    "pageScrollWidth": 1440,
+    "globalHorizontalOverflow": false,
+    "visibleTabs": [
+      "Overview",
+      "Master Data",
+      "Commodity Prices",
+      "Pricing Workbench",
+      "Part RM Content",
+      "Administration",
+      "More"
+    ],
+    "tables": [
+      {
+        "index": 0,
+        "clientWidth": 1374,
+        "scrollWidth": 1374,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 1,
+        "clientWidth": 1340,
+        "scrollWidth": 1340,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 2,
+        "clientWidth": 1340,
+        "scrollWidth": 1340,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 3,
+        "clientWidth": 1374,
+        "scrollWidth": 1374,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 4,
+        "clientWidth": 1374,
+        "scrollWidth": 1374,
+        "horizontalOverflow": false
+      }
+    ]
+  }
+}

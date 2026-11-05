@@ -2,11 +2,15 @@
 
 ## Handover snapshot
 
-Prepared on **2026-10-31** for continuation on another laptop or by another AI agent.
+Prepared on **2026-11-01** for continuation on another laptop or by another AI agent.
 
 The Raw Material Content Management application is a working trial-first SAP CAP/SAPUI5 demo using synthetic data, dummy authentication, in-memory SQLite and simulated SAP posting. The complete confirmed persona backlog and the technical Trial Gate T1 rerun/reversal paths are implemented and verified locally.
 
 This is not a productive implementation. No productive S/4 connection, real business data, BTP deployment or financially effective posting has been introduced.
+
+## Continuous handover rule
+
+The user requires this document and the root-level `FIRST_PROMPT.md` to be updated after every substantive project interaction. Future agents must maintain both automatically; the user should never need to repeat this instruction. Each update must reflect completed work, verification evidence, uncommitted changes, remaining tasks and the exact continuation point.
 
 ## GitHub transfer status
 
@@ -28,6 +32,7 @@ git log -1 --oneline
 The working tree should be clean immediately after cloning. If it is not, inspect and preserve the unexpected changes before continuing.
 
 `.gitattributes` fixes source/document files to LF so switching between Windows environments does not create line-ending-only diffs.
+`.gitignore` excludes transient `~$*.pptx` Microsoft Office lock files so an open handbook does not pollute handover status.
 
 ## Required reading order
 
@@ -41,7 +46,10 @@ A new developer or AI agent must read these files before inspecting or editing c
 6. `docs/ARCHITECTURE.md` — current and target architecture boundaries.
 7. `docs/PERSONAS_AND_FUNCTIONAL_SCOPE.md` — confirmed personas and functional rules.
 8. `docs/PRICING_WORKBENCH_DESIGN.md` — approved reference mapping and formulas.
-9. `README.md` — quick local commands and overview.
+9. `docs/REFERENCE_SCOPE_AUDIT.md` — strict pages 1-38 audit, coverage and intentional follow-ons.
+10. `docs/LEGACY_RMCM_PARITY_AUDIT.md` — legacy capability, field and reported-issue reconciliation.
+11. `docs/DESIGN_REFERENCE_ADOPTION.md` — modern-shell adoption boundary and excluded reference content.
+12. `README.md` — quick local commands and overview.
 
 When documents conflict, `PROJECT_GUIDELINES.md` is binding.
 
@@ -55,6 +63,11 @@ When documents conflict, `PROJECT_GUIDELINES.md` is binding.
 - Revisioned composition creation, completeness checks, submission and immutable approval.
 - Mandatory/advisory workflow findings, controlled resolution and advisory exclusion.
 - Subgrade-aware vendor price changes, impacted-part reporting and deterministic cost sheets.
+- Buyer-created absolute/delta price requests with three amendment dates, retained references and overlap prevention.
+- Sequential two-level price approval with mandatory remarks and immutable step/role/version evidence.
+- Legacy-critical VPL classification, frequency, initial-rate, exposure, geometry, weight, scrap, surface and commercial attributes with server validation.
+- Duplicate source-document-line and calculation-line prevention.
+- Controls & Audit UI with a twelve-item legacy control matrix, approval history and correlation references.
 - Blocked/simulation/amendment price-document release and Approver decision.
 - Approved contract-price proposal and downstream handoff evidence.
 - Exact decimal retrospective calculation against synthetic GR and reversal quantities.
@@ -62,19 +75,34 @@ When documents conflict, `PROJECT_GUIDELINES.md` is binding.
 - Lineage-linked calculation reruns that do not overwrite the source run.
 - Price-document reconciliation with expected, actual and difference evidence.
 - Persona action annotations, productive organizational-scope checks and read-only governed projections.
-- Themed SAPUI5 control tower with explicit light text on dark surfaces.
+- Themed SAPUI5 control tower with an executive Overview: verified price bridge, retrospective-impact equation, operational-readiness bars, RM contribution comparison and seven-stage journey.
+- Master Data pulse cards, Commodity Price governance cards and a Pricing Workbench decision rail derived from loaded governed state.
+- Responsive card/chart animation, hover feedback and explicit `prefers-reduced-motion` accessibility, with light text on dark surfaces.
+- Top-right trial persona selector for Buyer, RM Admin, Commodity Admin, Approver and All personas, filtering tabs, forms and actions without pretending to replace authentication.
+- Compact graphite shell, collapsible persona-aware left navigation and role-context workspace header adopted from the user-supplied HTML design reference.
+- Corrected menu/product-mark spacing, high-contrast white `RM` initials and grid-aligned Current/Proposed comparison bars.
+- Persona-visible Analytics Dashboard with four KPIs, 12-month price/index movement, workflow mix, six-supplier exposure, six-commodity comparison and eight-month impact history; all expanded analytical series are labelled synthetic UX-review data.
+- Professional enterprise design system across all modules: native-height shell geometry, simplified brand/persona chrome, compact executive KPIs, restrained navy/blue hierarchy, consistent typography, low-elevation work surfaces and standardized operational cards/forms/tables.
+- Responsive contrast/overflow hardening with explicit light foregrounds on dark gradients, container-bounded forms/cards and internal table scrolling.
+
+The 58-page reference PDF was re-audited on 2026-11-01 under the user-mandated boundary. All pages 1-38 were text-extracted, rendered and visually reviewed; pages 39-58 were not inspected or used. `docs/REFERENCE_SCOPE_AUDIT.md` records the detailed capability mapping and intentional follow-ons.
+
+The explicitly authorized legacy application audit covered all three user manuals, the screen-wise field workbook and both reported-issue artifacts. All 190 unique embedded manual images and all nine issue slides were visually inspected. `docs/LEGACY_RMCM_PARITY_AUDIT.md` is the authoritative parity record. The artefacts folder returns to out-of-scope status unless the user explicitly brings it back.
+
+The user also explicitly authorized a design-only review of `artefacts/RMCM Design POC/RMCM.html`. Only shell, navigation, hierarchy and responsive interaction patterns were adopted. No sample data, AI feature, HANA Cloud assumption, external feed, vendor portal or automatic posting claim was copied. `docs/DESIGN_REFERENCE_ADOPTION.md` records the exact disposition; the HTML returns to excluded artefact status.
 
 Calculation Bucket/Run remains outside the confirmed user journey because approved outcomes hand off to existing debit/provision automation. The existing calculation service is retained for trial evidence and is hidden from the primary UI.
 
 ## Last verified baseline
 
-Verified locally on 2026-10-31:
+Verified locally on 2026-11-01:
 
 - Node.js `22.23.3`; npm `10.9.9`.
 - SAP CAP runtime `10.1.1`; development kit resolved to `10.2.0` in the lockfile.
-- `npm.cmd test`: **14/14 passed**.
+- `npm.cmd test`: **20/20 passed**.
 - `npm.cmd run build`: passed; Node.js-only CAP build, no HANA deployer.
 - `npm.cmd audit --omit=dev`: zero production vulnerabilities.
+- Analytics/shell correction was followed by a fresh 20/20 test run, production build, XML/JavaScript parsing and zero-vulnerability production audit.
 - SAPUI5 XML view parsing: passed.
 - Health, UI and OData metadata endpoints: HTTP 200.
 - Direct write to governed `VendorPartLinkages`: HTTP 405 as designed.
@@ -84,14 +112,22 @@ Verified locally on 2026-10-31:
 - Calculation result: 300 receipt units less 20 reversal units = 280 eligible units; INR 4,200 impact.
 - Posting reversal replay returned the existing reversal record.
 - Lineage-linked rerun completed with the same INR 4,200 result.
+- Live smoke verified DELTA price creation (INR 220 to INR 225.50), three amendment dates, one system event and sequential SUBMITTED → UNDER_REVIEW → APPROVED decisions across RmcEditor, RmcApprover and RmcFinance.
+- Edge/Playwright visual review captured the superseding professional 26-state route at both 1440×900 and 1366×768. Evidence covers the native-height shell, compact KPIs, aligned bars, analytics views, operational modules, expanded/collapsed navigation and all four persona workspaces; there are no page errors, dark-surface contrast findings or global/table horizontal overflow.
 
-The isolated verification process on port 4005 was stopped. Any older process still running on port 4004 must be restarted to load the latest source.
+The isolated verification process on port 4005 was stopped. A fresh disposable demo containing the enriched dashboard is running locally on port 4004 for user review.
+
+The presentation handbook was enriched and validated natively in Microsoft PowerPoint. PowerPoint opened and exported all 44 slides successfully. The package contains 44 notes pages, 431 embedded vector assets, zero negative shape extents and zero malformed XML parts. Representative executive, process, matrix, verified-data, section, financial-bridge, boundary and closing slides were visually inspected from the native 1600×900 render.
+
+A separate leadership architecture deck is now available at `docs/RMC_Technical_Architecture_Leadership_Signoff.pptx`. Its 24 slides cover the architecture decision, current trial, target BTP/S/4 landscape, deployment topology, allow-listed/conditional/excluded BTP services, request flow, S/4 ownership, candidate interfaces, ports/adapters, data, security, connectivity, workflow authority, scale, resilience, operations, FinOps, delivery gates, risks, open decisions and a sign-off record. PowerPoint opened all 24 slides; the package has 24 notes pages, zero malformed XML parts and no negative shape extents.
 
 ## What remains
 
 ### Immediate next step
 
-Perform a human visual walkthrough of the new Master Data, Part RM Content, workflow-findings and reconciliation screens. Automated local Edge screenshot/DOM capture produced no inspectable output, although the application and API requests returned successfully. Record review feedback and any acceptance decisions in the project documents.
+Use `docs/VISUAL_REVIEW_REPORT.md` and `docs/ACCEPTANCE_REVIEW_CHECKLIST.md` for the human persona walkthrough. Use `docs/RMC_Technical_Architecture_Leadership_Signoff.pptx` for the architecture leadership session and record named Product/Business, Purchasing, Finance, Security, S/4 Architecture and BTP Platform/Operations decisions. The deck recommends conditional approval and explicitly does not authorize deployment or S/4 connectivity.
+
+During the walkthrough, use the top-right **View as** selector for each confirmed persona and verify the displayed forms/actions against business ownership. Record that this is a demo visualization control only; it does not authorize the selected role.
 
 ### Trial Gate T2 preparation
 
@@ -100,6 +136,18 @@ Perform a human visual walkthrough of the new Master Data, Part RM Content, work
 - Confirm formulas, rounding, UoM/currency rules, workflows, reports and approval authority.
 - Resolve or explicitly retain the open business questions in `PROJECT_GUIDELINES.md`.
 - Agree the weighted product-definition scope and acceptance evidence.
+
+### Explicit legacy-parity backlog
+
+1. Preview-first bulk imports with downloadable exact row, column and field diagnostics.
+2. Background report/export jobs and a centralized download repository with stable IDs.
+3. Threshold/DOA routing, named approver selection, delegation, skip rules, ageing and secure reminders; sequential two-step execution is complete.
+4. Governed scrap-price, surface-process, operation-cost and non-RM cost-element masters.
+5. Signed Finance rules for Plus-1, MASOP, offcut, scrap, surface protection, RT/APV and independent effective dates.
+6. Explicit VPL preview/diff behavior and the decision on donor colour-part rules.
+7. Business decision on which legacy reports remain separate named outputs versus consolidated workbench filters/exports.
+8. Productive IAS/XSUAA and released S/4 adapters only after the applicable gates.
+9. Clarification of the legacy “PAN number” field and whether it belongs in the canonical model.
 
 ### Intentionally not done
 
@@ -151,9 +199,19 @@ If the current changes were transferred as a workspace archive instead of Git, o
 | `srv/lib/commodity-master.js` | Commodity validation and lifecycle rules. |
 | `srv/lib/workflow-domain.js` | BOM explosion, composition assessment and scope rules. |
 | `srv/lib/demo-posting-adapter.js` | Idempotent simulation/reversal; never calls SAP. |
-| `test` | Fourteen automated domain, workflow, authorization and adapter tests. |
+| `test` | Twenty automated domain, workflow, authorization, UI-contract and adapter tests. |
 | `test/requests.http` | Read-only health, workbench, contract, BOM and evidence requests for manual smoke checks. |
 | `docs/ACCEPTANCE_REVIEW_CHECKLIST.md` | Human UI/process review and Gate T1/T2 decision template. |
+| `docs/VISUAL_REVIEW_REPORT.md` | Agent visual pre-review, corrected defects, evidence index and human-review boundary. |
+| `docs/DESIGN_REFERENCE_ADOPTION.md` | Approved design-only adoption from the HTML reference, including copied patterns and explicit exclusions. |
+| `docs/REFERENCE_SCOPE_AUDIT.md` | Strict pages 1-38 source audit, delivered coverage and intentional follow-ons; pages 39-58 excluded. |
+| `docs/review-evidence` | Before/after Edge screenshots and machine-readable browser-review evidence. |
+| `docs/RMC_Application_Business_Handbook.pptx` | 44-slide executive business deck and detailed role-based user handbook with verified-data and financial visuals. |
+| `scripts/generate-rmc-handbook.js` | Repeatable PowerPoint generator; requires `pptxgenjs` and Font Awesome packages. |
+| `docs/RMC_Technical_Architecture_Leadership_Signoff.pptx` | 24-slide leadership decision deck for the proposed BTP/S/4 technical architecture and formal sign-off. |
+| `scripts/generate-technical-architecture-deck.js` | Repeatable architecture deck generator using editable presentation-native shapes and vector icons. |
+| `scripts/capture-ui-review.js` | Repeatable Microsoft Edge/Playwright capture for key acceptance screens. |
+| `FIRST_PROMPT.md` | Always-current copy-ready prompt for the first message to another AI agent. |
 | `server.js` | CAP bootstrap, health endpoint and trial worker startup. |
 | `manifest.yml`, `mta.yaml` | Trial Cloud Foundry descriptors; not yet deployed in this phase. |
 | `xs-security.json` | Declared future productive scopes and role templates. |
@@ -161,6 +219,8 @@ If the current changes were transferred as a workspace archive instead of Git, o
 ## Working-tree summary
 
 The committed handover baseline includes the UI theme/workbench, persona workflow models and actions, schema and seed extensions, security roles, pricing/commodity/workflow libraries, tests, dependency lockfile and documentation.
+
+Current uncommitted work after commit `f793d2b` contains the presentation decks/generators, continuity files, strict reference and legacy parity work, the modern-shell adoption record, professional enterprise UI revamp, corrected shell/bar geometry, the synthetic Analytics Dashboard, browser script/evidence/report, persona selector, collapsible side navigation, responsive/contrast hardening, schema/service/UI changes, the added approval policy and contract tests. Preserve every listed `git status` change together; do not reset or selectively overwrite them.
 
 Always run `git status --short` before editing. Preserve all existing changes; do not reset, checkout or overwrite them.
 
@@ -178,44 +238,31 @@ Always run `git status --short` before editing. Preserve all existing changes; d
 
 ## Copy-ready AI continuation prompt
 
-```text
-Continue the Raw Material Content Management SAP CAP project from this workspace.
-
-Before taking action, read these files completely in order:
-1. AGENTS.md
-2. PROJECT_GUIDELINES.md
-3. docs/HANDOVER.md
-4. docs/IMPLEMENTATION_STATUS.md
-5. docs/ACCEPTANCE_REVIEW_CHECKLIST.md
-6. docs/ARCHITECTURE.md
-7. docs/PERSONAS_AND_FUNCTIONAL_SCOPE.md
-8. docs/PRICING_WORKBENCH_DESIGN.md
-9. README.md
-
-The current handover baseline has been committed and pushed to `origin/main`. Pull the latest `main` branch first. Treat PROJECT_GUIDELINES.md as binding. Inspect `git status --short` before editing and preserve every existing change. Do not inspect artefacts/. Use synthetic data only. Do not introduce real S/4 connectivity, productive posting, HANA Cloud or new paid BTP services before the required approval gates.
-
-First run `npm.cmd ci` if dependencies are absent, then `npm.cmd test` and `npm.cmd run build`. The expected baseline is 14/14 tests and a successful production CAP build. Report any mismatch before changing code.
-
-The confirmed persona backlog and technical Trial Gate T1 rerun/reversal paths are complete; do not rebuild them. Start with the unfinished-task list at the end of docs/HANDOVER.md. The immediate objective is a human visual/functional review using docs/ACCEPTANCE_REVIEW_CHECKLIST.md, followed by recorded feedback and Trial Gate T1 closure evidence. Then prepare Trial Gate T2 scope convergence.
-
-Do not invent unresolved accounting, S/4, Vistex, authorization or business decisions. Ask the user whenever a decision materially changes formulas, workflow, integration, security, cost or acceptance scope. BTP deployment must wait for an explicit user request, and real S/4 connectivity must wait for formal Gate T3 approval.
-```
+The authoritative copy-ready prompt is maintained separately in [`FIRST_PROMPT.md`](../FIRST_PROMPT.md), as requested by the user. Copy the fenced block from that file as the first message to another AI agent. Update it together with this handover and `AGENTS.md` after every substantive interaction.
 
 ## Unfinished tasks
 
 ### Transfer prerequisite
 
 1. Clone or pull the latest `origin/main` and confirm the working tree is clean before editing.
-2. Verify `docs/HANDOVER.md` contains the 2026-10-31 snapshot.
-3. Verify 14/14 tests, the production build and the zero-vulnerability production audit before continuing.
+2. Verify `docs/HANDOVER.md` contains the 2026-11-01 snapshot.
+3. Verify 20/20 tests, the production build and the zero-vulnerability production audit before continuing.
 
 ### Immediate product-review work
 
-1. Restart the latest demo and perform the human visual/functional walkthrough in `docs/ACCEPTANCE_REVIEW_CHECKLIST.md`.
-2. Review the new Master Data, Buyer linkage, contract exception/allocation, BOM hierarchy, leaf mapping, composition approval, findings and reconciliation screens.
-3. Check desktop usability, horizontal table behavior, required-field clarity, dark-surface contrast, status readability and error messages.
+1. Agent pre-review and dashboard-enrichment review are complete in `docs/VISUAL_REVIEW_REPORT.md`; retain all before/after and two-resolution evidence.
+2. Product Owner, Purchasing and Finance must perform the human functional walkthrough in `docs/ACCEPTANCE_REVIEW_CHECKLIST.md`.
+3. Review business terminology, action sequencing, exception language, formulas and acceptance evidence rather than repeating the already-verified layout checks.
 4. Record every user observation as accept/change/defer/reject with an owner and acceptance criteria.
-5. Correct any defects discovered during the review and rerun the complete automated and live smoke baseline.
+5. Correct any further defects discovered during human review and rerun the complete automated and live smoke baseline.
+
+### Architecture leadership sign-off
+
+1. Present `docs/RMC_Technical_Architecture_Leadership_Signoff.pptx` to Product/Business, Purchasing, Finance, Security, S/4 Architecture and BTP Platform/Operations leadership.
+2. Record approve, conditional approval, rework or reject plus named conditions, owners and dates on the final slide or in the approved records repository.
+3. Confirm the minimum BTP allow-list and that HANA Cloud/additional paid services remain excluded unless a costed ADR is approved.
+4. Assign owners and target gates to the landscape, posting, BOM/GR, pricing, workflow, records, network and operations decisions.
+5. Treat sign-off as architecture direction only; BTP deployment still requires explicit user instruction and real-landscape work remains prohibited before Gate T3.
 
 ### Formal Trial Gate T1 closure
 
@@ -239,6 +286,6 @@ Do not invent unresolved accounting, S/4, Vistex, authorization or business deci
 2. Do not connect to any real S/4 system or load real business data before formal Gate T3 approval.
 3. After Gate T3, plan IAS/XSUAA assignments, released S/4 adapters, clean-core S/4 persistence, durable job processing, supported MRNB-equivalent posting, contract update/Flexible Workflow, migration, monitoring and security/load testing.
 
-### Known review limitation
+### Review boundary
 
-Automated local Microsoft Edge screenshot/DOM capture returned no inspectable output. HTTP/UI endpoints and SAPUI5 XML parsing passed, but visual acceptance must be performed by a person or by an agent with functioning browser-automation tooling.
+Automated Microsoft Edge capture now works and has produced inspectable evidence. It cannot provide Product Owner, Purchasing or Finance acceptance, validate business terminology against the current Vistex process, or close Trial Gate T1; those remain human decisions.

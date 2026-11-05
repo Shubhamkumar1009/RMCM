@@ -157,6 +157,21 @@ module.exports = class RmcService extends cds.ApplicationService {
       return workbench.impactedParts;
     });
 
+    this.on('getLegacyControlMatrix', () => [
+      { controlId: 'LC-01', area: 'Performance', legacyRisk: 'Long-running CPAR jobs blocked buyers and processed combinations serially.', safeguard: 'Priority queue, atomic claims, chunked processing, progress and failure evidence.', implementationStatus: 'IMPLEMENTED_TRIAL', evidence: 'CalculationRuns and calculation-worker.js' },
+      { controlId: 'LC-02', area: 'Data integrity', legacyRisk: 'Duplicate or triplicate S/4 quantities distorted provision results.', safeguard: 'Unique source-document identity, reversal-aware quantities, calculation lineage and reconciliation.', implementationStatus: 'IMPLEMENTED_TRIAL', evidence: 'GoodsReceipts, CalculationLines and ReconciliationRecords' },
+      { controlId: 'LC-03', area: 'Vendor-part linkage', legacyRisk: 'Missing contracts, duplicate exposure lines and validity gaps required manual selection.', safeguard: 'Effective-dated linkage, overlap rejection, valid-contract search and governed missing-contract exception.', implementationStatus: 'IMPLEMENTED', evidence: 'VendorPartLinkages workflow actions' },
+      { controlId: 'LC-04', area: 'Master governance', legacyRisk: 'Buyer-created duplicate RM types and grades reduced data quality.', safeguard: 'RM Admin activation, unique codes, validity, deletion markers and immutable approval evidence.', implementationStatus: 'IMPLEMENTED', evidence: 'RawMaterialMasterRequests and governed master actions' },
+      { controlId: 'LC-05', area: 'Weight accuracy', legacyRisk: 'Total input weight was not recalculated when VPL line weights changed.', safeguard: 'Server recalculation, weight-balance validation, completeness scoring and approved snapshot hash.', implementationStatus: 'IMPLEMENTED', evidence: 'mapCompositionLeaf and assessComposition' },
+      { controlId: 'LC-06', area: 'Amendment correctness', legacyRisk: 'Multiple plants, vendors and dates could produce incorrect or fragmented results.', safeguard: 'Explicit supplier/plant/contract scope, effective dates, immutable runs and duplicate-period blocking.', implementationStatus: 'IMPLEMENTED_TRIAL', evidence: 'PriceChangeRequests and queueCalculation' },
+      { controlId: 'LC-07', area: 'Approval', legacyRisk: 'Unclear approval status, unreadable attachments and repeated decisions weakened control.', safeguard: 'Status state machine, mandatory rejection remarks, optimistic versioning and retained approval records.', implementationStatus: 'IMPLEMENTED_TRIAL', evidence: 'ApprovalRecords and governed decision actions' },
+      { controlId: 'LC-08', area: 'Traceability', legacyRisk: 'Background reports lacked a reliable reference ID.', safeguard: 'Run numbers, proposal numbers, idempotency keys and correlation IDs link every execution and handoff.', implementationStatus: 'IMPLEMENTED', evidence: 'CalculationRuns, ContractPriceProposals, PostingRecords and SystemEvents' },
+      { controlId: 'LC-09', area: 'Bulk maintenance', legacyRisk: 'Uploads did not identify the exact row, column and field error.', safeguard: 'Preview-first bulk validation with downloadable row-level errors.', implementationStatus: 'PLANNED_T2', evidence: 'Legacy parity backlog; not yet exposed in trial UI' },
+      { controlId: 'LC-10', area: 'Identity and roles', legacyRisk: 'Login and manual role assignment failures delayed onboarding.', safeguard: 'Target IAS/XSUAA SSO, role collections and organizational attributes; trial uses dummy identity only.', implementationStatus: 'GATED_FOR_PRODUCTION', evidence: 'xs-security.json and Gate T3 boundary' },
+      { controlId: 'LC-11', area: 'Notifications', legacyRisk: 'Pending approvals required manual follow-up and email attachments were fragile.', safeguard: 'In-app worklists are present; reminders and enterprise notification remain a gated adapter.', implementationStatus: 'PARTIAL', evidence: 'Workflow worklists; notification adapter pending approval' },
+      { controlId: 'LC-12', area: 'Financial parity', legacyRisk: 'Plus-1, MASOP, offcut, scrap and surface-protection rules produced disputed outcomes.', safeguard: 'Exact decimal server engine and explainable traces are implemented; legacy formulas require Finance sign-off before activation.', implementationStatus: 'AWAITING_FINANCE_RULES', evidence: 'calculation-engine.js and LEGACY_RMCM_PARITY_AUDIT.md' }
+    ]);
+
     this.on('createCommodity', async (req) => {
       let draft;
       try {
@@ -294,12 +309,25 @@ module.exports = class RmcService extends cds.ApplicationService {
       }
       const ID = cds.utils.uuid();
       const hasContract = Boolean(contractItem);
+      const linkageType = String(data.linkageType || 'BOUGHT_OUT').toUpperCase();
+      const partType = String(data.partType || 'BOUGHT_OUT').toUpperCase();
+      if (!['MASOP', 'BOUGHT_OUT'].includes(linkageType)) req.reject(400, 'Linkage type must be MASOP or BOUGHT_OUT.');
+      if (!['MASOP_RM', 'MASOP_BOP', 'BOUGHT_OUT'].includes(partType)) req.reject(400, 'Part type must be MASOP_RM, MASOP_BOP or BOUGHT_OUT.');
+      if (linkageType !== 'MASOP' && partType !== 'BOUGHT_OUT') req.reject(400, 'MASOP part types require a MASOP linkage.');
+      if (data.initialSettledRate != null && decimal(data.initialSettledRate).lt(0)) req.reject(400, 'Initial settled rate cannot be negative.');
       await tx.run(INSERT.into(entities.VendorPartLinkages).entries({
         ID,
         supplier_ID: data.supplierID,
         material_ID: data.materialID,
         plant: data.plant,
         purchasingOrg: data.purchasingOrg || supplier.purchasingOrg,
+        linkageType,
+        partType,
+        indexingFrequency: data.indexingFrequency || null,
+        initialSettledRate: data.initialSettledRate ?? null,
+        initialRateCurrency: data.initialRateCurrency || null,
+        preliminaryExposure: Boolean(data.preliminaryExposure),
+        sourceReference: data.sourceReference || null,
         contractItem_ID: contractItem?.ID || null,
         revisionLevel: String(data.revisionLevel).trim(),
         validFrom: data.validFrom,
@@ -445,6 +473,16 @@ module.exports = class RmcService extends cds.ApplicationService {
         req.reject(400, 'Positive input/output weights, non-negative scrap and UoM are required.');
       }
       if (decimal(req.data.outputWeight).plus(req.data.scrapWeight || 0).gt(req.data.inputWeight)) req.reject(400, 'Output plus scrap cannot exceed input weight.');
+      if (req.data.minimumThickness != null && req.data.maximumThickness != null && decimal(req.data.minimumThickness).gt(req.data.maximumThickness)) {
+        req.reject(400, 'Minimum thickness cannot exceed maximum thickness.');
+      }
+      for (const field of ['offcutPct', 'scrapYieldPct', 'talcPct']) {
+        if (req.data[field] != null && (decimal(req.data[field]).lt(0) || decimal(req.data[field]).gt(100))) req.reject(400, `${field} must be between 0 and 100.`);
+      }
+      for (const field of ['minimumThickness', 'maximumThickness', 'tubeOutsideDiameter', 'length', 'width', 'numberOfBlanks', 'plmWeight', 'finishWeight', 'forgeCastWeight', 'offcutWeight', 'surfaceArea', 'surfaceProtectionCost', 'boughtOutCost', 'packagingTermsCost', 'polypropyleneContent']) {
+        if (req.data[field] != null && decimal(req.data[field]).lt(0)) req.reject(400, `${field} cannot be negative.`);
+      }
+      if (req.data.impactModifier != null && decimal(req.data.impactModifier).lte(0)) req.reject(400, 'Impact modifier must be greater than zero.');
       const material = await tx.run(SELECT.one.from(entities.Materials).where({ ID: profile.material_ID }));
       const nodes = await this.#bomHierarchy(tx, entities, req, profile.material_ID, material.plant, profile.validFrom);
       const leaf = nodes.find((node) => node.bomItemID === req.data.bomItemID && node.leafPart);
@@ -464,6 +502,27 @@ module.exports = class RmcService extends cds.ApplicationService {
         inputWeight: req.data.inputWeight,
         outputWeight: req.data.outputWeight,
         scrapWeight: req.data.scrapWeight || 0,
+        minimumThickness: req.data.minimumThickness ?? null,
+        maximumThickness: req.data.maximumThickness ?? null,
+        tubeOutsideDiameter: req.data.tubeOutsideDiameter ?? null,
+        length: req.data.length ?? null,
+        width: req.data.width ?? null,
+        numberOfBlanks: req.data.numberOfBlanks ?? null,
+        plmWeight: req.data.plmWeight ?? null,
+        finishWeight: req.data.finishWeight ?? null,
+        forgeCastWeight: req.data.forgeCastWeight ?? null,
+        offcutWeight: req.data.offcutWeight ?? null,
+        offcutPct: req.data.offcutPct ?? null,
+        scrapYieldPct: req.data.scrapYieldPct ?? null,
+        surfaceArea: req.data.surfaceArea ?? null,
+        surfaceAreaUoM: req.data.surfaceAreaUoM || null,
+        surfaceProcess: req.data.surfaceProcess || null,
+        surfaceProtectionCost: req.data.surfaceProtectionCost ?? null,
+        boughtOutCost: req.data.boughtOutCost ?? null,
+        packagingTermsCost: req.data.packagingTermsCost ?? null,
+        polypropyleneContent: req.data.polypropyleneContent ?? null,
+        talcPct: req.data.talcPct ?? null,
+        impactModifier: req.data.impactModifier ?? 1,
         yieldFactor: decimal(req.data.outputWeight).div(req.data.inputWeight).toFixed(9),
         scrapFactor: 1,
         source: req.data.overrideReason ? 'MANUAL' : 'BOM',
@@ -614,6 +673,74 @@ module.exports = class RmcService extends cds.ApplicationService {
       return tx.run(SELECT.one.from(entities.RawMaterialMasterRequests).where({ ID: requestID }));
     });
 
+    this.on('createPriceChange', async (req) => {
+      const data = req.data;
+      const mode = String(data.inputMode || 'ABSOLUTE').toUpperCase();
+      if (!['ABSOLUTE', 'DELTA'].includes(mode)) req.reject(400, 'Input mode must be ABSOLUTE or DELTA.');
+      if (!data.supplierID || !data.gradeID || !data.validFrom || data.enteredValue == null || !String(data.reason || '').trim()) {
+        req.reject(400, 'Supplier, grade, valid-from date, entered value and reason are required.');
+      }
+      try { assertValidity(data.validFrom, data.validTo); } catch (error) { req.reject(400, error.message); }
+      if (data.secondAmendmentDate && data.secondAmendmentDate < data.validFrom) req.reject(400, 'Second amendment date cannot precede the first amendment date.');
+      if (data.thirdAmendmentDate && (!data.secondAmendmentDate || data.thirdAmendmentDate < data.secondAmendmentDate)) req.reject(400, 'Third amendment date requires and cannot precede the second amendment date.');
+
+      const tx = cds.tx(req);
+      const [supplier, grade, subGrade, prices, existing] = await Promise.all([
+        tx.run(SELECT.one.from(entities.Suppliers).where({ ID: data.supplierID })),
+        tx.run(SELECT.one.from(entities.RawMaterialGrades).where({ ID: data.gradeID })),
+        data.subGradeID ? tx.run(SELECT.one.from(entities.RawMaterialSubGrades).where({ ID: data.subGradeID })) : null,
+        tx.run(SELECT.from(entities.VendorPrices).where({ supplier_ID: data.supplierID, grade_ID: data.gradeID, status: 'EFFECTIVE' })),
+        tx.run(SELECT.from(entities.PriceChangeRequests).where({ supplier_ID: data.supplierID, grade_ID: data.gradeID, status: { in: ['DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'EFFECTIVE'] } }))
+      ]);
+      if (!supplier || !grade) req.reject(404, 'Supplier or RM grade not found.');
+      if (subGrade && subGrade.grade_ID !== grade.ID) req.reject(400, 'The selected subgrade does not belong to the selected grade.');
+      this.#assertScope(req, { plant: data.plant, purchasingOrg: data.purchasingOrg || supplier.purchasingOrg, supplierCode: supplier.code });
+      const current = prices
+        .filter((row) => (row.subGrade_ID || null) === (data.subGradeID || null) && row.validFrom <= data.validFrom && (!row.validTo || row.validTo >= data.validFrom))
+        .sort((a, b) => String(b.validFrom).localeCompare(String(a.validFrom)))[0];
+      if (!current) req.reject(409, 'No effective vendor price exists for the selected supplier, grade, subgrade and date.');
+      if (existing.some((row) => (row.subGrade_ID || null) === (data.subGradeID || null) && (!row.validTo || row.validTo >= data.validFrom) && (!data.validTo || row.validFrom <= data.validTo))) {
+        req.reject(409, 'An overlapping active price-change request already exists for this supplier and grade.');
+      }
+      const entered = decimal(data.enteredValue);
+      const proposed = mode === 'DELTA' ? decimal(current.price).plus(entered) : entered;
+      if (proposed.lte(0)) req.reject(400, 'The resulting proposed price must be greater than zero.');
+      const ID = cds.utils.uuid();
+      const requestNumber = `PCR-${new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14)}-${ID.slice(0, 4).toUpperCase()}`;
+      await tx.run(INSERT.into(entities.PriceChangeRequests).entries({
+        ID,
+        requestNumber,
+        supplier_ID: supplier.ID,
+        grade_ID: grade.ID,
+        subGrade_ID: subGrade?.ID || null,
+        purchasingOrg: data.purchasingOrg || supplier.purchasingOrg,
+        plant: data.plant || null,
+        oldPrice: current.price,
+        proposedPrice: proposed.toFixed(6),
+        inputMode: mode,
+        enteredDelta: mode === 'DELTA' ? entered.toFixed(6) : proposed.minus(current.price).toFixed(6),
+        priceUoM: data.priceUoM || current.priceUoM,
+        priceUnit: Number(data.priceUnit || current.priceUnit || 1),
+        currency: data.currency || current.currency,
+        validFrom: data.validFrom,
+        validTo: data.validTo || null,
+        secondAmendmentDate: data.secondAmendmentDate || null,
+        thirdAmendmentDate: data.thirdAmendmentDate || null,
+        attachmentReference: data.attachmentReference || null,
+        sourceReference: data.sourceReference || null,
+        reason: String(data.reason).trim(),
+        status: 'DRAFT',
+        priceDocumentMode: 'AMENDMENT',
+        priceDocumentStatus: 'BLOCKED',
+        currentApprovalStep: 0,
+        totalApprovalSteps: 1,
+        version: 1
+      }));
+      await this.#audit(tx, entities, req, 'PRICE_CHANGE', ID, 1, 'CREATED', `Created in ${mode} mode.`, 'Buyer');
+      await this.#event(tx, entities, 'INFO', 'PRICE_CHANGE', req, 'PRICE_CHANGE', ID, `${requestNumber} was created in ${mode} mode.`);
+      return tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID }));
+    });
+
     this.on('submitPriceChange', async (req) => {
       const { priceChangeID, expectedVersion } = req.data;
       const tx = cds.tx(req);
@@ -622,6 +749,10 @@ module.exports = class RmcService extends cds.ApplicationService {
       await this.#assertPriceScope(tx, entities, req, record);
       if (!['DRAFT', 'REJECTED'].includes(record.status)) req.reject(409, `A ${record.status} request cannot be submitted.`);
       if (decimal(record.proposedPrice).lte(0)) req.reject(400, 'Proposed price must be greater than zero.');
+
+      const policies = (await tx.run(SELECT.from(entities.ApprovalPolicies).where({ objectType: 'PRICE_CHANGE', active: true }).orderBy('sequence asc')))
+        .filter((policy) => (!policy.purchasingOrg || policy.purchasingOrg === record.purchasingOrg) && (!policy.currency || policy.currency === record.currency));
+      if (!policies.length) req.reject(409, 'No active approval policy is configured for this price change.');
 
       const now = new Date().toISOString();
       const changed = await tx.run(
@@ -633,6 +764,8 @@ module.exports = class RmcService extends cds.ApplicationService {
             decidedAt: null,
             decidedBy: null,
             decisionComment: null,
+            currentApprovalStep: 1,
+            totalApprovalSteps: policies.length,
             version: Number(record.version) + 1
           })
           .where({ ID: priceChangeID, version: Number(expectedVersion) })
@@ -646,7 +779,7 @@ module.exports = class RmcService extends cds.ApplicationService {
       const { priceChangeID, expectedVersion, decision, comment } = req.data;
       const normalizedDecision = String(decision || '').toUpperCase();
       if (!['APPROVE', 'REJECT'].includes(normalizedDecision)) req.reject(400, 'Decision must be APPROVE or REJECT.');
-      if (normalizedDecision === 'REJECT' && !comment) req.reject(400, 'A rejection comment is required.');
+      if (!String(comment || '').trim()) req.reject(400, 'An approval or rejection comment is required.');
 
       const tx = cds.tx(req);
       const record = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
@@ -659,13 +792,22 @@ module.exports = class RmcService extends cds.ApplicationService {
       if (!allowSelfApproval && record.submittedBy === actor(req)) {
         req.reject(403, 'Maker-checker control prevents the submitter from approving this request.');
       }
-      const requiredRole = await this.#requiredApprovalRole(tx, entities, req, 'PRICE_CHANGE');
-
-      const status = normalizedDecision === 'APPROVE' ? 'APPROVED' : 'REJECTED';
+      const policies = (await tx.run(SELECT.from(entities.ApprovalPolicies).where({ objectType: 'PRICE_CHANGE', active: true }).orderBy('sequence asc')))
+        .filter((policy) => (!policy.purchasingOrg || policy.purchasingOrg === record.purchasingOrg) && (!policy.currency || policy.currency === record.currency));
+      const currentStep = Math.max(1, Number(record.currentApprovalStep || 1));
+      const policy = policies.find((candidate) => Number(candidate.sequence) === currentStep) || policies[currentStep - 1];
+      if (!policy) req.reject(409, `No active approval policy is configured for step ${currentStep}.`);
+      const demoMode = process.env.RMC_DEMO_MODE !== 'false';
+      if (!demoMode && !req.user.is(policy.requiredRole)) req.reject(403, `Role ${policy.requiredRole} is required for approval step ${currentStep}.`);
+      const finalApproval = normalizedDecision === 'APPROVE' && currentStep >= policies.length;
+      const status = normalizedDecision === 'REJECT' ? 'REJECTED' : (finalApproval ? 'APPROVED' : 'UNDER_REVIEW');
+      const nextStep = normalizedDecision === 'APPROVE' && !finalApproval ? currentStep + 1 : currentStep;
       const changed = await tx.run(
         UPDATE(entities.PriceChangeRequests)
           .set({
             status,
+            currentApprovalStep: nextStep,
+            totalApprovalSteps: policies.length,
             decidedAt: new Date().toISOString(),
             decidedBy: actor(req),
             decisionComment: comment || null,
@@ -674,7 +816,7 @@ module.exports = class RmcService extends cds.ApplicationService {
           .where({ ID: priceChangeID, version: Number(expectedVersion) })
       );
       if (!changed) req.reject(409, 'The request was changed by another user. Reload and try again.');
-      await this.#audit(tx, entities, req, 'PRICE_CHANGE', priceChangeID, Number(record.version) + 1, status, comment, requiredRole);
+      await this.#audit(tx, entities, req, 'PRICE_CHANGE', priceChangeID, Number(record.version) + 1, status, comment, policy.requiredRole, currentStep);
       return tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
     });
 
@@ -714,7 +856,7 @@ module.exports = class RmcService extends cds.ApplicationService {
       const { priceChangeID, expectedVersion, decision, comment } = req.data;
       const normalized = String(decision || '').toUpperCase();
       if (!['APPROVE', 'REJECT'].includes(normalized)) req.reject(400, 'Decision must be APPROVE or REJECT.');
-      if (normalized === 'REJECT' && !comment) req.reject(400, 'A rejection comment is required.');
+      if (!String(comment || '').trim()) req.reject(400, 'An approval or rejection comment is required.');
       const tx = cds.tx(req);
       const record = await tx.run(SELECT.one.from(entities.PriceChangeRequests).where({ ID: priceChangeID }));
       assertVersion(req, record, expectedVersion);
@@ -1206,14 +1348,14 @@ module.exports = class RmcService extends cds.ApplicationService {
     return policy.requiredRole;
   }
 
-  async #audit(tx, entities, req, objectType, objectID, objectVersion, decision, comment, actorRole) {
+  async #audit(tx, entities, req, objectType, objectID, objectVersion, decision, comment, actorRole, step = 1) {
     await tx.run(
       INSERT.into(entities.ApprovalRecords).entries({
         ID: cds.utils.uuid(),
         objectType,
         objectID,
         objectVersion,
-        step: 1,
+        step,
         decision,
         actor: actor(req),
         actorRole: actorRole || 'DEMO_USER',

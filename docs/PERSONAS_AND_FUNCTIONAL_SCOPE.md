@@ -17,6 +17,10 @@ Calculation Bucket and Calculation Run are deferred. Approved contract-price cha
 
 Authorization must combine persona role with company code, purchasing organization, plant and supplier scope.
 
+### Trial persona visualization
+
+Until productive authentication is configured, the top-right **View as** selector switches between Buyer, RM Admin, Commodity Admin and Approver workspaces. It filters tabs, entry forms and action buttons to make ownership and maker-checker separation visible during review. **All personas (demo)** retains the complete end-to-end workspace. The selector does not grant authority and does not replace CAP authorization annotations or future IAS/XSUAA enforcement.
+
 ## End-to-end process
 
 ```mermaid

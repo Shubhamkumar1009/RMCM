@@ -243,6 +243,27 @@ entity PartConstituents : cuid, managed, Versioned {
   inputWeight          : Decimal(23,9);
   outputWeight         : Decimal(23,9);
   scrapWeight          : Decimal(23,9) default 0;
+  minimumThickness     : Decimal(23,9);
+  maximumThickness     : Decimal(23,9);
+  tubeOutsideDiameter  : Decimal(23,9);
+  length               : Decimal(23,9);
+  width                : Decimal(23,9);
+  numberOfBlanks       : Decimal(23,9);
+  plmWeight            : Decimal(23,9);
+  finishWeight         : Decimal(23,9);
+  forgeCastWeight      : Decimal(23,9);
+  offcutWeight         : Decimal(23,9);
+  offcutPct            : Decimal(9,6);
+  scrapYieldPct        : Decimal(9,6);
+  surfaceArea          : Decimal(23,9);
+  surfaceAreaUoM       : String(3);
+  surfaceProcess       : String(60);
+  surfaceProtectionCost : Decimal(23,6);
+  boughtOutCost        : Decimal(23,6);
+  packagingTermsCost   : Decimal(23,6);
+  polypropyleneContent : Decimal(23,9);
+  talcPct              : Decimal(9,6);
+  impactModifier       : Decimal(12,9) default 1;
   yieldFactor          : Decimal(12,9) default 1;
   scrapFactor          : Decimal(12,9) default 1;
   source               : String(20) default 'BOM';
@@ -289,6 +310,8 @@ entity PriceChangeRequests : cuid, managed, Versioned {
   plant                : String(4);
   oldPrice             : Decimal(23,6) not null;
   proposedPrice        : Decimal(23,6) not null;
+  inputMode            : String(20) default 'ABSOLUTE';
+  enteredDelta         : Decimal(23,6);
   priceUoM             : String(3) not null;
   priceUnit            : Integer not null default 1;
   currency             : String(3) not null;
@@ -296,6 +319,11 @@ entity PriceChangeRequests : cuid, managed, Versioned {
   validTo               : Date;
   observationFrom      : Date;
   observationTo        : Date;
+  secondAmendmentDate  : Date;
+  thirdAmendmentDate   : Date;
+  attachmentReference : String(500);
+  currentApprovalStep  : Integer default 0;
+  totalApprovalSteps   : Integer default 1;
   sourceReference      : String(200);
   reason               : String(500) not null;
   status               : RequestStatus default #DRAFT;
@@ -319,6 +347,13 @@ entity VendorPartLinkages : cuid, managed, Versioned {
   material             : Association to Materials not null;
   plant                : String(4) not null;
   purchasingOrg        : String(8);
+  linkageType          : String(20) default 'BOUGHT_OUT';
+  partType             : String(20) default 'BOUGHT_OUT';
+  indexingFrequency    : String(20);
+  initialSettledRate   : Decimal(23,6);
+  initialRateCurrency  : String(3);
+  preliminaryExposure : Boolean default false;
+  sourceReference      : String(100);
   contractItem         : Association to ContractItems;
   revisionLevel        : String(20) not null;
   validFrom             : Date not null;
@@ -372,6 +407,7 @@ entity ReconciliationRecords : cuid, managed, Versioned {
   reconciledAt         : Timestamp not null;
 }
 
+@assert.unique.sourceDocumentLine: [sourceSystem, materialDocument, fiscalYear, documentItem]
 entity GoodsReceipts : cuid, managed, Versioned {
   materialDocument     : String(20) not null;
   fiscalYear           : String(4) not null;
@@ -418,6 +454,7 @@ entity CalculationRuns : cuid, managed, Versioned {
   configSnapshot       : LargeString;
 }
 
+@assert.unique.runReceiptConstituent: [run, goodsReceipt, constituent]
 entity CalculationLines : cuid, managed {
   run                  : Association to CalculationRuns not null;
   goodsReceipt         : Association to GoodsReceipts not null;

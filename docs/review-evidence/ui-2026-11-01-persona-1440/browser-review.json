@@ -1,0 +1,79 @@
+{
+  "capturedAt": "2026-10-31T21:52:23.807Z",
+  "url": "http://localhost:4004/rmc/webapp/index.html",
+  "viewport": "1440x900",
+  "evidence": [
+    "docs/review-evidence/ui-2026-11-01-persona-1440/01-overview.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/01b-overview-analytics.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/01c-overview-journey.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/02-master-data-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/03-master-data-catalog.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/03b-commodity-price-governance.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/03c-governed-price-creation.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/04-pricing-workbench-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/04b-pricing-decision-rail.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/05-impacted-parts.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/06-reconciliation.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/07-part-rm-content-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/08-workflow-findings.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/09-approved-composition.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/09b-legacy-engineering-attributes.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/10-legacy-control-matrix.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/11-approval-audit-history.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/12-execution-correlation-evidence.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/13-persona-buyer.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/14-persona-rm-admin.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/15-persona-commodity-admin.jpg",
+    "docs/review-evidence/ui-2026-11-01-persona-1440/16-persona-approver.jpg"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:4004/rmc/webapp/Component-preload.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:4004/rmc/webapp/Component-preload.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "2026-11-01 03:21:40.966899 failed to load JavaScript resource: rmc/app/Component-preload.js -  sap.ui.ModuleSystem"
+  ],
+  "pageErrors": [],
+  "darkSurfaceIssues": [],
+  "layout": {
+    "viewportWidth": 1440,
+    "pageScrollWidth": 1440,
+    "globalHorizontalOverflow": false,
+    "visibleTabs": [
+      "Overview",
+      "Master Data",
+      "Commodity Prices",
+      "Pricing Workbench",
+      "Part RM Content",
+      "Controls & Audit",
+      "Administration",
+      "More"
+    ],
+    "tables": [
+      {
+        "index": 0,
+        "clientWidth": 1374,
+        "scrollWidth": 1374,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 1,
+        "clientWidth": 1374,
+        "scrollWidth": 1374,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 2,
+        "clientWidth": 1340,
+        "scrollWidth": 1340,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 3,
+        "clientWidth": 1340,
+        "scrollWidth": 1340,
+        "horizontalOverflow": false
+      }
+    ]
+  }
+}

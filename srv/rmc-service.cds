@@ -175,11 +175,21 @@ service RmcService {
     uoM                    : String(3);
   }
 
+  type LegacyControl {
+    controlId              : String(20);
+    area                   : String(60);
+    legacyRisk             : String(500);
+    safeguard              : String(500);
+    implementationStatus   : String(30);
+    evidence               : String(300);
+  }
+
   action getDashboard() returns DashboardSummary;
   action getPricingWorkbench(priceChangeID : UUID) returns PricingWorkbenchSummary;
   action getCostSheet(priceChangeID : UUID) returns many CostSheetLine;
   action getImpactBreakdown(priceChangeID : UUID) returns many ImpactBreakdown;
   action getImpactedParts(priceChangeID : UUID) returns many ImpactedPart;
+  action getLegacyControlMatrix() returns many LegacyControl;
   @requires: 'CommodityAdmin'
   action createCommodity(code : String(20), name : String(100), description : String(500), validFrom : Date, validTo : Date) returns Commodities;
   @requires: 'CommodityAdmin'
@@ -189,7 +199,7 @@ service RmcService {
   @requires: 'Buyer'
   action searchValidContractItems(supplierID : UUID, materialID : UUID, plant : String(4), businessDate : Date) returns many ContractSearchResult;
   @requires: 'Buyer'
-  action createVendorPartLinkage(supplierID : UUID, materialID : UUID, plant : String(4), purchasingOrg : String(8), contractItemID : UUID, revisionLevel : String(20), validFrom : Date, validTo : Date, missingContractReason : String(500)) returns VendorPartLinkages;
+  action createVendorPartLinkage(supplierID : UUID, materialID : UUID, plant : String(4), purchasingOrg : String(8), contractItemID : UUID, revisionLevel : String(20), validFrom : Date, validTo : Date, missingContractReason : String(500), linkageType : String(20), partType : String(20), indexingFrequency : String(20), initialSettledRate : Decimal(23,6), initialRateCurrency : String(3), preliminaryExposure : Boolean, sourceReference : String(100)) returns VendorPartLinkages;
   @requires: 'CompositionApprover'
   action decideContractException(linkageID : UUID, expectedVersion : Integer, decision : String(10), comment : String(500)) returns VendorPartLinkages;
   @requires: 'Buyer'
@@ -198,7 +208,7 @@ service RmcService {
   @requires: 'Buyer'
   action createCompositionRevision(linkageID : UUID, expectedVersion : Integer, bomHeaderID : UUID, validFrom : Date, validTo : Date) returns PartProfiles;
   @requires: 'Buyer'
-  action mapCompositionLeaf(profileID : UUID, expectedVersion : Integer, bomItemID : UUID, gradeID : UUID, subGradeID : UUID, inputWeight : Decimal(23,9), outputWeight : Decimal(23,9), scrapWeight : Decimal(23,9), uoM : String(3), overrideReason : String(500)) returns PartProfiles;
+  action mapCompositionLeaf(profileID : UUID, expectedVersion : Integer, bomItemID : UUID, gradeID : UUID, subGradeID : UUID, inputWeight : Decimal(23,9), outputWeight : Decimal(23,9), scrapWeight : Decimal(23,9), uoM : String(3), overrideReason : String(500), minimumThickness : Decimal(23,9), maximumThickness : Decimal(23,9), tubeOutsideDiameter : Decimal(23,9), length : Decimal(23,9), width : Decimal(23,9), numberOfBlanks : Decimal(23,9), plmWeight : Decimal(23,9), finishWeight : Decimal(23,9), forgeCastWeight : Decimal(23,9), offcutWeight : Decimal(23,9), offcutPct : Decimal(9,6), scrapYieldPct : Decimal(9,6), surfaceArea : Decimal(23,9), surfaceAreaUoM : String(3), surfaceProcess : String(60), surfaceProtectionCost : Decimal(23,6), boughtOutCost : Decimal(23,6), packagingTermsCost : Decimal(23,6), polypropyleneContent : Decimal(23,9), talcPct : Decimal(9,6), impactModifier : Decimal(12,9)) returns PartProfiles;
   @requires: 'Buyer'
   action submitComposition(profileID : UUID, expectedVersion : Integer) returns PartProfiles;
   @requires: 'CompositionApprover'
@@ -211,6 +221,8 @@ service RmcService {
   action submitRmMasterRequest(requestID : UUID, expectedVersion : Integer) returns RawMaterialMasterRequests;
   @requires: 'RmAdmin'
   action decideRmMasterRequest(requestID : UUID, expectedVersion : Integer, decision : String(10), comment : String(500)) returns RawMaterialMasterRequests;
+  @requires: 'Buyer'
+  action createPriceChange(supplierID : UUID, gradeID : UUID, subGradeID : UUID, purchasingOrg : String(8), plant : String(4), inputMode : String(20), enteredValue : Decimal(23,6), priceUoM : String(3), priceUnit : Integer, currency : String(3), validFrom : Date, validTo : Date, reason : String(500), sourceReference : String(200), secondAmendmentDate : Date, thirdAmendmentDate : Date, attachmentReference : String(500)) returns PriceChangeRequests;
   @requires: 'Buyer'
   action submitPriceChange(priceChangeID : UUID, expectedVersion : Integer) returns PriceChangeRequests;
   @requires: 'RmcApprover'

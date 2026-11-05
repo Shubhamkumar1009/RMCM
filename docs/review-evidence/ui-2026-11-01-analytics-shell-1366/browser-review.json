@@ -1,0 +1,83 @@
+{
+  "capturedAt": "2026-11-01T02:51:34.574Z",
+  "url": "http://localhost:4004/rmc/webapp/index.html",
+  "viewport": "1366x768",
+  "evidence": [
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/01-overview.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/01b-overview-analytics.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/01c-overview-journey.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/01d-analytics-dashboard-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/01e-analytics-comparisons.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/01f-analytics-impact-trend.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/02-master-data-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/03-master-data-catalog.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/03b-commodity-price-governance.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/03c-governed-price-creation.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/04-pricing-workbench-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/04b-pricing-decision-rail.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/05-impacted-parts.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/06-reconciliation.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/07-part-rm-content-top.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/08-workflow-findings.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/09-approved-composition.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/09b-legacy-engineering-attributes.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/10-legacy-control-matrix.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/11-approval-audit-history.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/12-execution-correlation-evidence.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/13-persona-buyer.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/14-persona-rm-admin.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/15-persona-commodity-admin.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/16-persona-approver.jpg",
+    "docs/review-evidence/ui-2026-11-01-analytics-shell-1366/17-navigation-collapsed.jpg"
+  ],
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:4004/rmc/webapp/Component-preload.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://localhost:4004/rmc/webapp/Component-preload.js' because its MIME type ('text/html') is not executable, and strict MIME type checking is enabled.",
+    "2026-11-01 08:20:46.965699 failed to load JavaScript resource: rmc/app/Component-preload.js -  sap.ui.ModuleSystem"
+  ],
+  "pageErrors": [],
+  "darkSurfaceIssues": [],
+  "layout": {
+    "viewportWidth": 1366,
+    "pageScrollWidth": 1366,
+    "globalHorizontalOverflow": false,
+    "visibleTabs": [
+      "Overview",
+      "Analytics Dashboard",
+      "Master Data",
+      "Commodity Prices",
+      "Pricing Workbench",
+      "Part RM Content",
+      "Controls & Audit",
+      "Administration"
+    ],
+    "tables": [
+      {
+        "index": 0,
+        "clientWidth": 1043,
+        "scrollWidth": 1043,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 1,
+        "clientWidth": 1043,
+        "scrollWidth": 1043,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 2,
+        "clientWidth": 1009,
+        "scrollWidth": 1009,
+        "horizontalOverflow": false
+      },
+      {
+        "index": 3,
+        "clientWidth": 1009,
+        "scrollWidth": 1009,
+        "horizontalOverflow": false
+      }
+    ]
+  }
+}

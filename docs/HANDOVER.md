@@ -2,7 +2,7 @@
 
 ## Handover snapshot
 
-Prepared on **2026-11-01** for continuation on another laptop or by another AI agent.
+Prepared on **2026-11-05** for continuation on another laptop or by another AI agent.
 
 The Raw Material Content Management application is a working trial-first SAP CAP/SAPUI5 demo using synthetic data, dummy authentication, in-memory SQLite and simulated SAP posting. The complete confirmed persona backlog and the technical Trial Gate T1 rerun/reversal paths are implemented and verified locally.
 
@@ -19,6 +19,8 @@ The handover baseline is committed and pushed to the `main` branch of:
 ```text
 origin  https://github.com/Shubhamkumar1009/RMCM.git
 ```
+
+The complete application, tests, documentation, decks, generators and visual evidence were published in main project commit `edcc54f` (`Complete RMC legacy parity, analytics, and professional UI`).
 
 On the destination laptop, clone or pull `origin/main`, then confirm the latest commit contains this handover:
 
@@ -95,7 +97,7 @@ Calculation Bucket/Run remains outside the confirmed user journey because approv
 
 ## Last verified baseline
 
-Verified locally on 2026-11-01:
+Verified locally on 2026-11-05 before GitHub publication:
 
 - Node.js `22.23.3`; npm `10.9.9`.
 - SAP CAP runtime `10.1.1`; development kit resolved to `10.2.0` in the lockfile.
@@ -220,7 +222,7 @@ If the current changes were transferred as a workspace archive instead of Git, o
 
 The committed handover baseline includes the UI theme/workbench, persona workflow models and actions, schema and seed extensions, security roles, pricing/commodity/workflow libraries, tests, dependency lockfile and documentation.
 
-Current uncommitted work after commit `f793d2b` contains the presentation decks/generators, continuity files, strict reference and legacy parity work, the modern-shell adoption record, professional enterprise UI revamp, corrected shell/bar geometry, the synthetic Analytics Dashboard, browser script/evidence/report, persona selector, collapsible side navigation, responsive/contrast hardening, schema/service/UI changes, the added approval policy and contract tests. Preserve every listed `git status` change together; do not reset or selectively overwrite them.
+Main project commit `edcc54f` contains the presentation decks/generators, continuity files, strict reference and legacy parity work, professional enterprise UI revamp, corrected shell/bar geometry, synthetic Analytics Dashboard, browser script/evidence/report, persona selector, responsive/contrast hardening, schema/service/UI changes, approval policy and contract tests. It was pushed to `origin/main` on 2026-11-05. A fresh clone should have a clean working tree.
 
 Always run `git status --short` before editing. Preserve all existing changes; do not reset, checkout or overwrite them.
 
